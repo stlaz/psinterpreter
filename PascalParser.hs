@@ -3,7 +3,7 @@
 @author: 	Stanislav Laznicka <xlazni08@stud.fit.vutbr.cz>
 -}
 
-module PascalParser ( parsePascal )  where
+module PascalParser ( Command(..), Expr(..), parsePascal )  where
 -- module Main ( main ) where
 
 import System.IO
@@ -63,7 +63,7 @@ pascalp = do
 	reserved "end"
 	dot
 	eof						-- EOF should occur after parsing the whole file
-	return (vars, absyntree)
+	return (vars, Seq absyntree)
 	<?> "pascalp"
 
 
@@ -123,13 +123,3 @@ parsePascal input file =
 	case parse pascalp file input of
 		Left e -> error "parse"
 		Right absyntree -> absyntree
-
---main = do
---	args <- getArgs
---	if length args /= 1
---		then error "Wrong number of arguments."
---		else do
---			let fileName = args !! 0
---			input <- readFile $ fileName
---			let absyntree = parsePascal input fileName
---			print absyntree
