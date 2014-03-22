@@ -3,7 +3,7 @@
 @author: 	Stanislav Laznicka <xlazni08@stud.fit.vutbr.cz>
 -}
 
-module PascalParser ( Command(..), Expr(..), parsePascal )  where
+module PascalParser ( Command(..), Expr(..), BoolExpr(..), parsePascal )  where
 -- module Main ( main ) where
 
 import System.IO
@@ -20,9 +20,9 @@ tokDef = emptyDef
 	,	identStart		= letter <|> char '_'
 	,	identLetter		= alphaNum <|> char '_'
 	,	opStart 		= opLetter emptyDef
-	,	opLetter		= oneOf "+-=.:"
-	,	reservedOpNames	= [ ":=", "+", "*", "." ]
-	,	reservedNames 	= [	"begin", "div", "do", "double", "else", "end",
+	,	opLetter		= oneOf "+-=:div<>"
+	,	reservedOpNames	= [ ":=", "+", "*", "div", "=", "<>" ]
+	,	reservedNames 	= [	"begin", "do", "double", "else", "end",
 							"if", "integer", "readln", "string", "then", "var",
 							"while", "writeln" ]
 	}
@@ -44,6 +44,7 @@ data Command = Empty 	-- this should describe the program structure
 	| Assign String Expr
 	| Writeln Expr
 	| Seq [ Command ]
+	| If BoolExpr Command Command
 	deriving Show
 
 data Expr = IConst Int
@@ -52,6 +53,16 @@ data Expr = IConst Int
 	| Sub Expr Expr
 	| Mult Expr Expr
 	| Div Expr Expr
+	| Pars Expr
+	deriving Show
+
+data BoolExpr = Equal Expr Expr
+	| NEqual Expr Expr
+	| IsGreat Expr Expr
+	| IsLess Expr Expr
+	| IsGreatE Expr Expr
+	| IsLessE Expr Expr
+	| BPars BoolExpr
 	deriving Show
 
 -- starting non-terminal, removes all spaces and comments at the start of the file
@@ -100,11 +111,19 @@ cmd = do
     	e <- parens expr
     	semi
     	return (Writeln e)
+    <|> do
+    	reserved "if"
+    	cond <- boolExpr
+    	reserved "then"
+    	comms1 <- cmd
+    	reserved "else"
+    	comms2 <- cmd
+    	return (If cond comms1 comms2)
     <?> "cmd"
 
 expr = buildExpressionParser operators term where
 	operators = [
-			[ op "*" Mult, op "/" Div ],
+			[ op "*" Mult, op "div" Div ],
 			[ op "+" Add, op "-" Sub ]
 		]
 	op name func = 
@@ -117,9 +136,33 @@ term =
 	<|> do
 		v <- identifier
 		return (Var v)
+	<|> do
+		e <- parens expr
+		return (Pars e)
 	<?> "term error"
+
+boolExpr =
+	do
+		e1 <- expr
+		v <- cmpOp
+		e2 <- expr
+		return (v e1 e2)
+	<?> "boolExpr error."
+	where
+		cmpOp = resOp "=" Equal
+			<|> resOp "<>" NEqual
+			<|> resOp "<" IsLess
+			<|> resOp ">" IsGreat
+			<|> resOp "<=" IsLessE
+			<|> resOp ">=" IsGreatE
+			<?> "resOp error."
+			where
+				resOp name cls = do
+					reservedOp name
+					return cls
+
 
 parsePascal input file =
 	case parse pascalp file input of
-		Left e -> error "parse"
+		Left e -> error "Parser error."
 		Right absyntree -> absyntree

@@ -25,7 +25,18 @@ evaluate ts (IConst c) = c
 evaluate ts (Var v) = get ts v
 -- TODO: What happens when exp1 or exp2 each other evaluate to different type?
 evaluate ts (Add exp1 exp2) = (evaluate ts exp1) + (evaluate ts exp2)
+evaluate ts (Sub exp1 exp2) = (evaluate ts exp1) - (evaluate ts exp2)
 evaluate ts (Mult exp1 exp2) = (evaluate ts exp1) * (evaluate ts exp2)
+evaluate ts (Div exp1 exp2) = (evaluate ts exp1) `div` (evaluate ts exp2)
+evaluate ts (Pars exp) = evaluate ts exp
+
+evalCond :: SymbolTable -> BoolExpr -> Bool
+evalCond ts (Equal exp1 exp2)    = (evaluate ts exp1) == (evaluate ts exp2)
+evalCond ts (NEqual exp1 exp2)   = (evaluate ts exp1) /= (evaluate ts exp2)
+evalCond ts (IsLess exp1 exp2)   = (evaluate ts exp1) < (evaluate ts exp2)
+evalCond ts (IsGreat exp1 exp2)  = (evaluate ts exp1) > (evaluate ts exp2)
+evalCond ts (IsLessE exp1 exp2)  = (evaluate ts exp1) <= (evaluate ts exp2)
+evalCond ts (IsGreatE exp1 exp2) = (evaluate ts exp1) >= (evaluate ts exp2)
 
 interpret :: SymbolTable -> Command -> IO SymbolTable
 interpret ts Empty = return ts	-- Empty expression, simple
@@ -38,6 +49,9 @@ interpret ts (Seq (com:coms)) = do
 	ts' <- interpret ts com
 	interpret ts' (Seq coms)
 
+interpret ts (If cond comm1 comm2) = do
+	if(evalCond ts cond) then interpret ts comm1
+		else interpret ts comm2
 
 main = do
 	args <- getArgs
@@ -48,4 +62,4 @@ main = do
 			input <- readFile $ fileName
 			let absyntree = parsePascal input fileName
 			interpret [] (snd absyntree)
-			print $ fst absyntree
+			print $ snd absyntree
