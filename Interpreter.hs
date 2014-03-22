@@ -48,10 +48,14 @@ interpret ts (Seq []) = return ts
 interpret ts (Seq (com:coms)) = do
 	ts' <- interpret ts com
 	interpret ts' (Seq coms)
-
-interpret ts (If cond comm1 comm2) = do
-	if(evalCond ts cond) then interpret ts comm1
-		else interpret ts comm2
+interpret ts (If cond coms1 coms2) =
+	if(evalCond ts cond) then interpret ts coms1
+		else interpret ts coms2
+interpret ts (While cond coms) = do
+	if(evalCond ts cond) then do
+		ts' <- interpret ts coms
+		interpret ts' (While cond coms)
+	else return ts
 
 main = do
 	args <- getArgs

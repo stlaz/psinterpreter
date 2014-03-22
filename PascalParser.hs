@@ -45,6 +45,7 @@ data Command = Empty 	-- this should describe the program structure
 	| Writeln Expr
 	| Seq [ Command ]
 	| If BoolExpr Command Command
+	| While BoolExpr Command
 	deriving Show
 
 data Expr = IConst Int
@@ -115,10 +116,16 @@ cmd = do
     	reserved "if"
     	cond <- boolExpr
     	reserved "then"
-    	comms1 <- cmd
+    	coms1 <- cmd
     	reserved "else"
-    	comms2 <- cmd
-    	return (If cond comms1 comms2)
+    	coms2 <- cmd
+    	return (If cond coms1 coms2)
+    <|> do
+    	reserved "while"
+    	cond <- boolExpr
+    	reserved "do"
+    	coms <- cmd
+    	return (While cond coms)
     <?> "cmd"
 
 expr = buildExpressionParser operators term where
