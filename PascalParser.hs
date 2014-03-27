@@ -3,7 +3,8 @@
 @author: 	Stanislav Laznicka <xlazni08@stud.fit.vutbr.cz>
 -}
 
-module PascalParser ( Command(..), Expr(..), BoolExpr(..), parsePascal )  where
+module PascalParser ( Command(..), Functions(), Expr(..),
+					 BoolExpr(..), parsePascal )  where
 -- module Main ( main ) where
 
 import System.IO
@@ -29,32 +30,40 @@ tokDef = emptyDef
 
 lexal = P.makeTokenParser tokDef
 
-whiteSpace	= P.whiteSpace lexal
-integer		= P.integer lexal
-parens 		= P.parens lexal
-semi		= P.semi lexal
-identifier	= P.identifier lexal
-reserved	= P.reserved lexal
-reservedOp	= P.reservedOp lexal
-dot 		= P.dot lexal
-comma 		= P.comma lexal
-colon		= P.colon lexal
+whiteSpace		= P.whiteSpace lexal
+integer			= P.integer lexal
+stringLiteral	= P.stringLiteral lexal
+double 			= P.float lexal
+parens 			= P.parens lexal
+semi			= P.semi lexal
+identifier		= P.identifier lexal
+reserved		= P.reserved lexal
+reservedOp		= P.reservedOp lexal
+dot 			= P.dot lexal
+comma 			= P.comma lexal
+colon			= P.colon lexal
 
 data Command = Empty 	-- this should describe the program structure
 	| Assign String Expr
 	| Writeln Expr
+	| Readln String
 	| Seq [ Command ]
 	| If BoolExpr Command Command
 	| While BoolExpr Command
 	deriving Show
 
+data Functions = Function String [ (String, String) ] String Command
+	deriving Show
+
 data Expr = IConst Int
+	| SConst String
+	| DConst Double
 	| Var String
 	| Add Expr Expr
 	| Sub Expr Expr
 	| Mult Expr Expr
 	| Div Expr Expr
-	| Pars Expr
+	| Pars Expr 		-- parens
 	deriving Show
 
 data BoolExpr = Equal Expr Expr
@@ -70,18 +79,19 @@ data BoolExpr = Equal Expr Expr
 pascalp = do
 	whiteSpace
 	vars <- option [] variables
+	functionDeclares <- option [] parseFuncDec
 	reserved "begin"
 	absyntree <- (many cmd)	-- cmd is the actual parsing function
 	reserved "end"
 	dot
 	eof						-- EOF should occur after parsing the whole file
-	return (vars, Seq absyntree)
+	return (vars, functionDeclares, Seq absyntree)
 	<?> "pascalp"
 
 
 variables = do 		-- dodelat pro double
 	reserved "var"
-	v <- parseVariable `sepBy1` comma
+	v <- parseVariable `sepBy1` comma  -- possible project assignment mistake here!!!
 	semi
 	return v
 	--option comma
@@ -89,8 +99,33 @@ variables = do 		-- dodelat pro double
 parseVariable = do
 	v <- identifier
 	colon
-	reserved "integer"
-	return (v, "integer")
+	name <- resName
+	return (v, name)
+	where
+		resName =
+				rn' "integer"
+			<|> rn' "double"
+			<|> rn' "string"
+			where rn' typeof = do
+				reserved typeof
+				return typeof
+
+parseFuncDec = do
+	reserved "function"
+	id <- identifier
+	vars <- parens (parseVariable `sepBy1` comma)
+	colon
+	t <- resName
+	semi
+	return [(Function id vars t Empty)]
+	where
+		resName =
+				rn' "integer"
+			<|> rn' "double"
+			<|> rn' "string"
+			where rn' typeof = do
+				reserved typeof
+				return typeof
 
 -- This function deals with commands in the body of the programme and in functions
 cmd = do
@@ -112,6 +147,11 @@ cmd = do
     	e <- parens expr
     	semi
     	return (Writeln e)
+    <|> do
+    	reserved "readln"
+    	id <- parens identifier
+    	semi
+    	return (Readln id)
     <|> do
     	reserved "if"
     	cond <- boolExpr
@@ -140,6 +180,12 @@ term =
 	do
 		i <- integer
 		return (IConst $ fromInteger i)
+	<|> do
+		s <- stringLiteral
+		return (SConst s)
+	<|> do
+		d <- double
+		return (DConst d)
 	<|> do
 		v <- identifier
 		return (Var v)

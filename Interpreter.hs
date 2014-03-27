@@ -44,6 +44,9 @@ interpret ts (Assign var expr) = return $ set ts var $ evaluate ts expr
 interpret ts (Writeln expr) = do
 	print $ evaluate ts expr
 	return ts
+interpret ts (Readln id) = do
+	val <- readLn
+	return $ set ts id val
 interpret ts (Seq []) = return ts
 interpret ts (Seq (com:coms)) = do
 	ts' <- interpret ts com
@@ -65,5 +68,11 @@ main = do
 			let fileName = args !! 0
 			input <- readFile $ fileName
 			let absyntree = parsePascal input fileName
-			interpret [] (snd absyntree)
-			print $ snd absyntree
+			interpret [] (trd' absyntree)
+			print $ fst' absyntree
+			print $ snd' absyntree
+			print $ trd' absyntree
+			where
+				fst' (x, _, _) = x
+				snd' (_, x, _) = x
+				trd' (_, _, x) = x
