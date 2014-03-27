@@ -8,6 +8,7 @@ module PascalParser ( Command(..), Functions(), Expr(..),
 -- module Main ( main ) where
 
 import System.IO
+import Control.Applicative((<*))
 
 import Text.ParserCombinators.Parsec
 import qualified Text.ParserCombinators.Parsec.Token as P
@@ -66,7 +67,7 @@ data Expr = IConst Int
 	| Mult Expr Expr
 	| Div Expr Expr
 	| Pars Expr 		-- parens
-	| FuncCall [ Expr ]
+	| FuncCall String [ Expr ]
 	deriving Show
 
 data BoolExpr = Equal Expr Expr
@@ -141,16 +142,7 @@ cmd = do
 		semi
 		return Empty
     <|> do 
-        v <- identifier
-        --isFunc <- option [] $ parens $ expr `sepBy1` comma
-        --if (length isFunc) /= 0 then do
-        --	semi
-        --	return (Expr $ FuncCall isFunc)
-        --	else do
-        reservedOp ":="
-        e <- expr
-        semi
-        return (Assign v e)
+        try parseAssignment
     <|> do
     	reserved "begin"
     	commands <- (many cmd)
@@ -186,6 +178,14 @@ cmd = do
    		return (Expr e)
     <?> "cmd"
 
+parseAssignment = do
+        v <- identifier
+        reservedOp ":="
+        e <- expr
+        semi
+        return (Assign v e)
+
+
 
 expr = buildExpressionParser operators term where
 	operators = [
@@ -206,12 +206,23 @@ term =
 		d <- double
 		return (DConst d)
 	<|> do
-		v <- identifier
-		return (Var v)
+		try parseIdExpr
 	<|> do
 		e <- parens expr
 		return (Pars e)
+	<|> do
+		try parseFuncExpr
 	<?> "term error"
+
+parseFuncExpr = do
+	id <- identifier
+	params <- parens $ option [] $ expr `sepBy1` comma
+	return (FuncCall id params)
+
+parseIdExpr = do
+		v <- identifier
+		notFollowedBy $ parens $ option [] $ expr `sepBy1` comma
+		return (Var v)
 
 boolExpr =
 	do
