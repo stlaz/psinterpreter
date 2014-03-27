@@ -68,7 +68,7 @@ main = do
 			let fileName = args !! 0
 			input <- readFile $ fileName
 			let absyntree = parsePascal input fileName
-			interpret [] (trd' absyntree)
+			--interpret [] (trd' absyntree)
 			print $ fst' absyntree
 			print $ snd' absyntree
 			print $ trd' absyntree

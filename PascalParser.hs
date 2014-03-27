@@ -25,7 +25,7 @@ tokDef = emptyDef
 	,	reservedOpNames	= [ ":=", "+", "*", "div", "=", "<>" ]
 	,	reservedNames 	= [	"begin", "do", "double", "else", "end",
 							"if", "integer", "readln", "string", "then", "var",
-							"while", "writeln" ]
+							"while", "writeln", "function" ]
 	}
 
 lexal = P.makeTokenParser tokDef
@@ -50,9 +50,11 @@ data Command = Empty 	-- this should describe the program structure
 	| Seq [ Command ]
 	| If BoolExpr Command Command
 	| While BoolExpr Command
+	| Expr Expr
 	deriving Show
 
-data Functions = Function String [ (String, String) ] String Command
+-- Function identifier [(parameters)] type [local variables] function_body
+data Functions = Function String [ (String, String) ] String [ (String, String) ] Command
 	deriving Show
 
 data Expr = IConst Int
@@ -64,6 +66,7 @@ data Expr = IConst Int
 	| Mult Expr Expr
 	| Div Expr Expr
 	| Pars Expr 		-- parens
+	| FuncCall [ Expr ]
 	deriving Show
 
 data BoolExpr = Equal Expr Expr
@@ -79,7 +82,7 @@ data BoolExpr = Equal Expr Expr
 pascalp = do
 	whiteSpace
 	vars <- option [] variables
-	functionDeclares <- option [] parseFuncDec
+	functionDeclares <- many parseFuncBody
 	reserved "begin"
 	absyntree <- (many cmd)	-- cmd is the actual parsing function
 	reserved "end"
@@ -88,6 +91,10 @@ pascalp = do
 	return (vars, functionDeclares, Seq absyntree)
 	<?> "pascalp"
 
+
+fst' (x, _, _) = x
+snd' (_, x, _) = x
+trd' (_, _, x) = x
 
 variables = do 		-- dodelat pro double
 	reserved "var"
@@ -110,14 +117,16 @@ parseVariable = do
 				reserved typeof
 				return typeof
 
-parseFuncDec = do
+parseFuncBody = do
 	reserved "function"
 	id <- identifier
-	vars <- parens (parseVariable `sepBy1` comma)
+	params <- parens (parseVariable `sepBy1` comma)
 	colon
 	t <- resName
-	semi
-	return [(Function id vars t Empty)]
+	semi	
+	vars <- option [] variables
+	coms <- option Empty cmd
+	return (Function id params t vars coms)
 	where
 		resName =
 				rn' "integer"
@@ -133,6 +142,11 @@ cmd = do
 		return Empty
     <|> do 
         v <- identifier
+        --isFunc <- option [] $ parens $ expr `sepBy1` comma
+        --if (length isFunc) /= 0 then do
+        --	semi
+        --	return (Expr $ FuncCall isFunc)
+        --	else do
         reservedOp ":="
         e <- expr
         semi
@@ -166,7 +180,12 @@ cmd = do
     	reserved "do"
     	coms <- cmd
     	return (While cond coms)
+   	<|> do
+   		e <- expr
+   		semi
+   		return (Expr e)
     <?> "cmd"
+
 
 expr = buildExpressionParser operators term where
 	operators = [
