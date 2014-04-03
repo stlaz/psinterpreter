@@ -4,7 +4,7 @@
 -}
 
 module PascalParser ( Command(..), Functions(), Expr(..),
-					 BoolExpr(..), parsePascal )  where
+					 BoolExpr(..), parsePascal, fst',snd',trd' )  where
 -- module Main ( main ) where
 
 import System.IO
@@ -197,14 +197,12 @@ expr = buildExpressionParser operators term where
 
 term = 
 	do
-		i <- integer
-		return (IConst $ fromInteger i)
+		try(parseDouble)
+	<|> do		
+		try(parseInteger)
 	<|> do
 		s <- stringLiteral
 		return (SConst s)
-	<|> do
-		d <- double
-		return (DConst d)
 	<|> do
 		try parseIdExpr
 	<|> do
@@ -213,6 +211,18 @@ term =
 	<|> do
 		try parseFuncExpr
 	<?> "term error"
+
+parseDouble = do
+		sign <- option 1 (do s <- oneOf "+-"
+                                     return $ if s == '-' then-1.0 else 1.0)
+		d <- double
+		return (DConst $ fromRational sign*d)
+
+parseInteger = do
+		sign <- option 1 (do s <- oneOf "+-"
+                                     return $ if s == '-' then-1 else 1)
+		i <- integer
+		return (IConst $ fromInteger $ sign*i)
 
 parseFuncExpr = do
 	id <- identifier
