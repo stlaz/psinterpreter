@@ -8,7 +8,6 @@ module PascalParser ( Command(..), Functions(), Expr(..),
 -- module Main ( main ) where
 
 import System.IO
-import Control.Applicative((<*))
 
 import Text.ParserCombinators.Parsec
 import qualified Text.ParserCombinators.Parsec.Token as P

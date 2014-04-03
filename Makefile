@@ -5,7 +5,7 @@
 CL = ghc
 
 interpreter: Interpreter.hs PascalParser.hs
-	$(CL) -o $@  Interpreter
+	$(CL) -o $@ Interpreter
 
 clean:
 	rm -rf *.hi *.o interpreter
