@@ -3,7 +3,7 @@
 @author: 	Stanislav Laznicka <xlazni08@stud.fit.vutbr.cz>
 -}
 
-module PascalParser ( Command(..), Functions(), Expr(..),
+module PascalParser ( Command(..), Functions(..), Expr(..),
 					 BoolExpr(..), parsePascal, fst',snd',trd',
 					 PasTypes(..) )  where
 -- module Main ( main ) where
@@ -52,7 +52,7 @@ data Command = Empty 	-- this should describe the program structure
 	| If BoolExpr Command Command
 	| While BoolExpr Command
 	| Expr Expr
-	deriving Show
+	deriving (Show, Eq)
 
 -- Function identifier [(parameters)] type [local variables] function_body
 data Functions = Function String [ (String, PasTypes) ] PasTypes [ (String, PasTypes) ] Command
@@ -68,7 +68,7 @@ data Expr = IConst Int
 	| Div Expr Expr
 	| Pars Expr 		-- parens
 	| FuncCall String [ Expr ]
-	deriving Show
+	deriving (Show, Eq)
 
 data BoolExpr = Equal Expr Expr
 	| NEqual Expr Expr
@@ -77,9 +77,9 @@ data BoolExpr = Equal Expr Expr
 	| IsGreatE Expr Expr
 	| IsLessE Expr Expr
 	| BPars BoolExpr
-	deriving Show
+	deriving (Show, Eq)
 
-data PasTypes = PasNone | PasInt | PasDbl | PasStr
+data PasTypes = PasNone | PasInt | PasDbl | PasStr | PasFunc
 	deriving (Show, Eq, Ord)
 
 -- starting non-terminal, removes all spaces and comments at the start of the file
