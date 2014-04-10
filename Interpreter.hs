@@ -167,8 +167,8 @@ interpret tf ts (Assign var expr) = do
 		res = evaluate tf ts expr
 
 interpret tf ts (Writeln expr) = do
-	posSym <- snd midres
-	putStrLn $ id result posSym
+	posSym <- snd midres 	-- this is probably the last spot to turn IO Symbol to Symbol here
+	putStrLn $ id result posSym  -- therefore we need to pass it on, in case Expr is of type PasFunc
 	return ts
 	where 
 		midres = evaluate tf ts expr
@@ -187,16 +187,17 @@ interpret tf ts (Writeln expr) = do
 						_ -> "WritelnErrorr"
 				_ -> "WritelnError"
 	
---interpret tf ts (Readln id) = do
---	val <- getLine
---	return $ set ts id $ symval val
---	where
---		symval val
---			| oldtype == PasInt = (PasInt, read val :: Int, 0.0, "")
---			| oldtype == PasDbl = (PasStr, 0, 0.0, val)
---			| otherwise = (PasNone , 0, 0.0, "")
---			where
---				oldtype = getType $ get ts id
+interpret tf ts (Readln id) = do
+	val <- getLine
+	return $ set ts id $ symval val
+	where
+		symval val
+			| oldtype == PasInt = (PasInt, read val :: Int, 0.0, "", emptyFuncDef)
+			| oldtype == PasDbl = (PasDbl, 0, read val :: Double, "", emptyFuncDef)
+			| oldtype == PasDbl = (PasStr, 0, 0.0, "", emptyFuncDef)
+			| otherwise = (PasNone, 0, 0.0, "", emptyFuncDef)
+			where
+				oldtype = getType $ get ts id
 
 interpret tf ts (Seq []) = return ts
 interpret tf ts (Seq (com:coms)) = do
@@ -211,7 +212,11 @@ interpret tf ts (Seq (com:coms)) = do
 --		interpret tf ts' (While cond coms)
 --	else return ts
 
---interpret tf ts (Expr expr) = return $ set ts "000" $ evaluate tf ts expr
+interpret tf ts (Expr expr) = do
+	sym <- snd $ evaluate tf ts expr
+	-- We need to pass the second part for possible prints and reads in function
+	-- Lazy eval wouldn't care for them if this is done differently
+	return $ set ts "000" sym 	
 
 fillSymbols [] = [("000", emptySym)]
 fillSymbols (vh:tail) =
