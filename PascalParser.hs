@@ -4,7 +4,8 @@
 -}
 
 module PascalParser ( Command(..), Functions(), Expr(..),
-					 BoolExpr(..), parsePascal, fst',snd',trd' )  where
+					 BoolExpr(..), parsePascal, fst',snd',trd',
+					 PasTypes(..) )  where
 -- module Main ( main ) where
 
 import System.IO
@@ -54,7 +55,7 @@ data Command = Empty 	-- this should describe the program structure
 	deriving Show
 
 -- Function identifier [(parameters)] type [local variables] function_body
-data Functions = Function String [ (String, String) ] String [ (String, String) ] Command
+data Functions = Function String [ (String, PasTypes) ] PasTypes [ (String, PasTypes) ] Command
 	deriving Show
 
 data Expr = IConst Int
@@ -77,6 +78,9 @@ data BoolExpr = Equal Expr Expr
 	| IsLessE Expr Expr
 	| BPars BoolExpr
 	deriving Show
+
+data PasTypes = PasNone | PasInt | PasDbl | PasStr
+	deriving (Show, Eq, Ord)
 
 -- starting non-terminal, removes all spaces and comments at the start of the file
 pascalp = do
@@ -113,9 +117,16 @@ parseVariable = do
 				rn' "integer"
 			<|> rn' "double"
 			<|> rn' "string"
+			<?> "parseVariable"
 			where rn' typeof = do
 				reserved typeof
-				return typeof
+				if typeof == "integer" then do
+					return PasInt
+				else if typeof == "double" then do
+					return PasDbl
+				else do
+					return PasDbl
+
 
 parseFuncBody = do
 	reserved "function"
@@ -132,9 +143,15 @@ parseFuncBody = do
 				rn' "integer"
 			<|> rn' "double"
 			<|> rn' "string"
+			<?> "parseVariable"
 			where rn' typeof = do
 				reserved typeof
-				return typeof
+				if typeof == "integer" then do
+					return PasInt
+				else if typeof == "double" then do
+					return PasDbl
+				else do
+					return PasDbl
 
 -- This function deals with commands in the body of the programme and in functions
 cmd = do
