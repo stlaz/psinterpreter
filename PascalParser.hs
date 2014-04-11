@@ -131,7 +131,7 @@ parseVariable = do
 parseFuncBody = do
 	reserved "function"
 	id <- identifier
-	params <- parens (parseVariable `sepBy1` comma)
+	params <- parens $ option [] (parseVariable `sepBy1` comma)
 	colon
 	t <- resName
 	semi	

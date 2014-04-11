@@ -1,7 +1,6 @@
-																																							module Main ( main ) where
+module Main ( main ) where
 
 import System.Environment( getArgs )
-import System.IO.Unsafe( unsafePerformIO )
 
 import PascalParser
 
@@ -9,6 +8,7 @@ type SymbolTable = [(String, Symbol)]
 type FunctionTable = [(String, Symbol)]
 type Symbol = (PasTypes, Int, Double, String, (PasTypes, [ (String, PasTypes) ], [ (String, PasTypes) ], Command ))
 
+data Operation = Plus | Minus | Times | Divide
 
 emptyIOSym :: IO Symbol 
 emptyIOSym = do
@@ -79,6 +79,9 @@ binTypes x y
 	| (firstType == PasDbl) && (secondType == PasInt) = 3		-- Dbl Int
 	| (firstType == PasDbl) && (secondType == PasDbl) = 4		-- Dbl Dbl
 	| (firstType == PasStr) && (secondType == PasStr) = 5		-- String String
+	| (firstType == PasFunc) && (secondType == PasFunc) = 6		-- Function Function
+	| (firstType == PasFunc) = 7
+	| (secondType == PasFunc) = 8
 	where
 		firstType = getType x
 		secondType = getType y
@@ -95,57 +98,166 @@ evaluate tf ts (SConst s) = (setStr s,emptyIOSym)
 evaluate tf ts (FuncCall name args) = (emptyFunc, interFnc tf ts name)
 evaluate tf ts (Var v) = (get ts v, emptyIOSym)
 -- TODO: What happens when exp1 or exp2 each other evaluate to different type?
---evaluate tf ts (Add exp1 exp2)
---	| trinity == 1 = (PasInt, (snd'' first) + (snd'' second), 0.0, "")
---	| trinity == 2 = (PasDbl, 0, (fromIntegral (snd'' first)) + (trd'' second), "")
---	| trinity == 3 = (PasDbl, 0, (trd'' first) + (fromIntegral (snd'' second)), "")
---	| trinity == 4 = (PasDbl, 0, (trd'' first) + (trd'' second), "")
---	| trinity == 5 = (PasStr, 0, 0.0, (frth'' first) ++ (frth'' second))
---	| otherwise = (PasNone, 0, 0.0, "")
---	where
---		first = evaluate tf ts exp1
---		second = evaluate tf ts exp2
---		trinity = binTypes first second
+evaluate tf ts (Add exp1 exp2) = do
+	case trinity of
+		1 -> (setInt $ (getInt firstSym) + (getInt secondSym), emptyIOSym)
+		2 -> (setDbl $ (fromIntegral (getInt firstSym)) + (getDbl secondSym), emptyIOSym)
+		3 -> (setDbl $ (getDbl firstSym) + (fromIntegral (getInt secondSym)), emptyIOSym)
+		4 -> (setDbl $ (getDbl firstSym) + (getDbl secondSym), emptyIOSym)
+		5 -> (setStr $ (getStr firstSym) ++ (getStr secondSym), emptyIOSym)
+		6 -> (emptyFunc, evalFuncExpr tf ts 6 Plus first second)
+		7 -> (emptyFunc, evalFuncExpr tf ts 7 Plus first second)
+		8 -> (emptyFunc, evalFuncExpr tf ts 8 Plus first second)
+		_ -> (emptySym, emptyIOSym)
+	where
+		first = evaluate tf ts exp1
+		second = evaluate tf ts exp2
+		firstSym = fst first
+		secondSym = fst second
+		trinity = binTypes firstSym secondSym
 
---evaluate tf ts (Sub exp1 exp2)
---	| trinity == 1 = (PasInt, (snd'' first) - (snd'' second), 0.0, "")
---	| trinity == 2 = (PasDbl, 0, (fromIntegral (snd'' first)) - (trd'' second), "")
---	| trinity == 3 = (PasDbl, 0, (trd'' first) - (fromIntegral (snd'' second)), "")
---	| trinity == 4 = (PasDbl, 0, (trd'' first) - (trd'' second), "")
---	| otherwise = (PasNone, 0, 0.0, "")
---	where
---		first = evaluate tf ts exp1
---		second = evaluate tf ts exp2
---		trinity = binTypes first second
+evaluate tf ts (Sub exp1 exp2) = do
+	case trinity of
+		1 -> (setInt $ (getInt firstSym) - (getInt secondSym), emptyIOSym)
+		2 -> (setDbl $ (fromIntegral (getInt firstSym)) - (getDbl secondSym), emptyIOSym)
+		3 -> (setDbl $ (getDbl firstSym) - (fromIntegral (getInt secondSym)), emptyIOSym)
+		4 -> (setDbl $ (getDbl firstSym) - (getDbl secondSym), emptyIOSym)
+		6 -> (emptyFunc, evalFuncExpr tf ts 6 Minus first second)
+		7 -> (emptyFunc, evalFuncExpr tf ts 7 Minus first second)
+		8 -> (emptyFunc, evalFuncExpr tf ts 8 Minus first second)
+		_ -> (emptySym, emptyIOSym)
+	where
+		first = evaluate tf ts exp1
+		second = evaluate tf ts exp2
+		firstSym = fst first
+		secondSym = fst second
+		trinity = binTypes firstSym secondSym
 
---evaluate tf ts (Mult exp1 exp2)
---	| trinity == 1 = (PasInt, (snd'' first) * (snd'' second), 0.0, "")
---	| trinity == 2 = (PasDbl, 0, (fromIntegral (snd'' first)) * (trd'' second), "")
---	| trinity == 3 = (PasDbl, 0, (trd'' first) * (fromIntegral (snd'' second)), "")
---	| trinity == 4 = (PasDbl, 0, (trd'' first) * (trd'' second), "")
---	| otherwise = (PasNone, 0, 0.0, "")
---	where
---		first = evaluate tf ts exp1
---		second = evaluate tf ts exp2
---		trinity = binTypes first second
+evaluate tf ts (Mult exp1 exp2) = do
+	case trinity of
+		1 -> (setInt $ (getInt firstSym) * (getInt secondSym), emptyIOSym)
+		2 -> (setDbl $ (fromIntegral (getInt firstSym)) * (getDbl secondSym), emptyIOSym)
+		3 -> (setDbl $ (getDbl firstSym) * (fromIntegral (getInt secondSym)), emptyIOSym)
+		4 -> (setDbl $ (getDbl firstSym) * (getDbl secondSym), emptyIOSym)
+		6 -> (emptyFunc, evalFuncExpr tf ts 6 Times first second)
+		7 -> (emptyFunc, evalFuncExpr tf ts 7 Times first second)
+		8 -> (emptyFunc, evalFuncExpr tf ts 8 Times first second)
+		_ ->(emptySym, emptyIOSym)
+	where
+		first = evaluate tf ts exp1
+		second = evaluate tf ts exp2
+		firstSym = fst first
+		secondSym = fst second
+		trinity = binTypes firstSym secondSym
 
---evaluate tf ts (Div exp1 exp2)
---	| trinity == 1 = (PasInt, (snd'' first) `div` (snd'' second), 0.0, "")
---	| otherwise = (PasNone, 0, 0.0, "")
---	where
---		first = evaluate tf ts exp1
---		second = evaluate tf ts exp2
---		trinity = binTypes first second
+evaluate tf ts (Div exp1 exp2) = do
+	case trinity of
+		1 -> (setInt $ (getInt firstSym) `div` (getInt secondSym), emptyIOSym)
+		6 -> (emptyFunc, evalFuncExpr tf ts 6 Divide first second)
+		7 -> (emptyFunc, evalFuncExpr tf ts 7 Divide first second)
+		8 -> (emptyFunc, evalFuncExpr tf ts 8 Divide first second)
+		_ -> (emptySym, emptyIOSym)
+	where
+		first = evaluate tf ts exp1
+		second = evaluate tf ts exp2
+		firstSym = fst first
+		secondSym = fst second
+		trinity = binTypes firstSym secondSym
 
---evaluate tf ts (Pars exp) = evaluate tf ts exp
-----evaluate tf ts (FuncCall name args) = evalFunc tf ts name $ evalList tf ts args 
+evaluate tf ts (Pars exp) = evaluate tf ts exp
+
+evalFuncExpr :: FunctionTable -> SymbolTable -> Int -> Operation  -> (Symbol, IO Symbol) -> (Symbol, IO Symbol)-> IO Symbol
+-- I am so so sorry :(
+evalFuncExpr tf ts binType op sym1 sym2 = do
+	fIO <- firstIO
+	sIO <- secondIO
+	if(binType == 6) then do		
+		case binTypes fIO sIO of
+			1 -> case op of
+				Plus -> return (setInt $ (getInt fIO) + (getInt sIO))
+				Minus -> return (setInt $ (getInt fIO) - (getInt sIO))
+				Times -> return (setInt $ (getInt fIO) * (getInt sIO))
+				Divide -> return (setInt $ (getInt fIO) `div` (getInt sIO))
+			2 -> case op of
+				Plus -> return (setDbl $ (fromIntegral $ getInt fIO) + (getDbl sIO))
+				Minus -> return (setDbl $ (fromIntegral $ getInt fIO) - (getDbl sIO))
+				Times -> return (setDbl $ (fromIntegral $ getInt fIO) * (getDbl sIO))
+				Divide -> return emptySym
+			3 -> case op of
+				Plus -> return (setDbl $ (getDbl fIO) + (fromIntegral $ getInt sIO))
+				Minus -> return (setDbl $ (getDbl fIO) - (fromIntegral $ getInt sIO))
+				Times -> return (setDbl $ (getDbl fIO) * (fromIntegral $ getInt sIO))
+				Divide -> return emptySym
+			4 -> case op of
+				Plus -> return (setDbl $ (getDbl fIO) + (getDbl sIO))
+				Minus -> return (setDbl $ (getDbl fIO) - (getDbl sIO))
+				Times -> return (setDbl $ (getDbl fIO) * (getDbl sIO))
+				Divide -> return emptySym
+			5 -> case op of
+				Plus -> return (setStr $ (getStr fIO) ++ (getStr sIO))
+				_ -> return emptySym
+			_ -> return emptySym	
+	else if(binType == 7) then do
+		case binTypes fIO secondSym of
+			1 -> case op of
+				Plus -> return (setInt $ (getInt fIO) + (getInt secondSym))
+				Minus -> return (setInt $ (getInt fIO) - (getInt secondSym))
+				Times -> return (setInt $ (getInt fIO) * (getInt secondSym))
+				Divide -> return (setInt $ (getInt fIO) `div` (getInt secondSym))
+			2 -> case op of
+				Plus -> return (setDbl $ (fromIntegral $ getInt fIO) + (getDbl secondSym))
+				Minus -> return (setDbl $ (fromIntegral $ getInt fIO) - (getDbl secondSym))
+				Times -> return (setDbl $ (fromIntegral $ getInt fIO) * (getDbl secondSym))
+				Divide -> return emptySym
+			3 -> case op of
+				Plus -> return (setDbl $ (getDbl fIO) + (fromIntegral $ getInt secondSym))
+				Minus -> return (setDbl $ (getDbl fIO) - (fromIntegral $ getInt secondSym))
+				Times -> return (setDbl $ (getDbl fIO) * (fromIntegral $ getInt secondSym))
+				Divide -> return emptySym
+			4 -> case op of
+				Plus -> return (setDbl $ (getDbl fIO) + (getDbl secondSym))
+				Minus -> return (setDbl $ (getDbl fIO) - (getDbl secondSym))
+				Times -> return (setDbl $ (getDbl fIO) * (getDbl secondSym))
+				Divide -> return emptySym
+			5 -> case op of
+				Plus -> return (setStr $ (getStr fIO) ++ (getStr secondSym))
+				_ -> return emptySym
+			_ -> return emptySym	
+		else if(binType == 8) then do
+		case binTypes firstSym sIO of
+			1 -> case op of
+				Plus -> return (setInt $ (getInt firstSym) + (getInt sIO))
+				Minus -> return (setInt $ (getInt firstSym) - (getInt sIO))
+				Times -> return (setInt $ (getInt firstSym) * (getInt sIO))
+				Divide -> return (setInt $ (getInt firstSym) `div` (getInt sIO))
+			2 -> case op of
+				Plus -> return (setDbl $ (fromIntegral $ getInt firstSym) + (getDbl sIO))
+				Minus -> return (setDbl $ (fromIntegral $ getInt firstSym) - (getDbl sIO))
+				Times -> return (setDbl $ (fromIntegral $ getInt firstSym) * (getDbl sIO))
+				Divide -> return emptySym
+			3 -> case op of
+				Plus -> return (setDbl $ (getDbl firstSym) + (fromIntegral $ getInt sIO))
+				Minus -> return (setDbl $ (getDbl firstSym) - (fromIntegral $ getInt sIO))
+				Times -> return (setDbl $ (getDbl firstSym) * (fromIntegral $ getInt sIO))
+				Divide -> return emptySym
+			4 -> case op of
+				Plus -> return (setDbl $ (getDbl firstSym) + (getDbl sIO))
+				Minus -> return (setDbl $ (getDbl firstSym) - (getDbl sIO))
+				Times -> return (setDbl $ (getDbl firstSym) * (getDbl sIO))
+				Divide -> return emptySym
+			5 -> case op of
+				Plus -> return (setStr $ (getStr firstSym) ++ (getStr sIO))
+				_ -> return emptySym
+			_ -> return emptySym
+	else return emptySym
+	where
+		firstSym = fst sym1
+		firstIO = snd sym1
+		secondSym = fst sym2
+		secondIO = snd sym2
 
 --evalList tf ts [] = []
 --evalList tf ts (expr:tail) = (evaluate tf ts expr):(evalList tf ts tail)
-
---evalFunc :: FunctionTable -> SymbolTable -> String -> [Symbol] -> Symbol
---evalFunc tf ts name args = get (unsafePerformIO $ interpret tf ts (Writeln (SConst "Standa je buh"))) name
-
 
 --evalCond :: FunctionTable -> SymbolTable -> BoolExpr -> Bool
 --evalCond tf ts (Equal exp1 exp2)    = (evaluate tf ts exp1) == (evaluate tf ts exp2)
@@ -184,18 +296,19 @@ interpret tf ts (Writeln expr) = do
 						PasInt -> show $ getInt sym
 						PasDbl -> show $ getDbl sym
 						PasStr -> getStr sym
-						_ -> "WritelnErrorr"
+						_ -> "WritelnError"
 				_ -> "WritelnError"
 	
 interpret tf ts (Readln id) = do
 	val <- getLine
 	return $ set ts id $ symval val
 	where
-		symval val
-			| oldtype == PasInt = (PasInt, read val :: Int, 0.0, "", emptyFuncDef)
-			| oldtype == PasDbl = (PasDbl, 0, read val :: Double, "", emptyFuncDef)
-			| oldtype == PasDbl = (PasStr, 0, 0.0, "", emptyFuncDef)
-			| otherwise = (PasNone, 0, 0.0, "", emptyFuncDef)
+		symval val = do
+			case oldtype of
+				PasInt -> setInt (read val :: Int)
+				PasDbl -> setDbl (read val :: Double)
+				PasStr -> setStr val
+				_ -> (PasNone, 0, 0.0, "", emptyFuncDef)
 			where
 				oldtype = getType $ get ts id
 
@@ -247,5 +360,5 @@ main = do
 			print $ trd' absyntree
 			newsym <- interpret funcTable symTable (trd' absyntree)
 			print newsym
-			--print $ snd' absyntree
+			print $ snd' absyntree
 			--print $ trd' absyntree
