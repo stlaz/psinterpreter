@@ -3,6 +3,7 @@ module Main ( main ) where
 import System.Environment( getArgs )
 
 import PascalParser
+import SemCheck
 
 type SymbolTable = [(String, Symbol)]
 type FunctionTable = [(String, Symbol)]
@@ -380,7 +381,8 @@ main = do
 			let funcTable = fillFunc $ snd' absyntree
 			--print symTable
 			print $ trd' absyntree
-			newsym <- interpret funcTable symTable (trd' absyntree)
-			print newsym
-			print $ snd' absyntree
+			semantic funcTable symTable (trd' absyntree)
+			--newsym <- interpret funcTable symTable (trd' absyntree)
+			--print newsym
+			--print $ snd' absyntree
 			--print $ trd' absyntree

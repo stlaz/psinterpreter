@@ -4,7 +4,7 @@
 
 CL = ghc
 
-interpreter: Interpreter.hs PascalParser.hs
+interpreter: Interpreter.hs PascalParser.hs SemCheck.hs
 	$(CL) -o $@ Interpreter
 
 clean:
