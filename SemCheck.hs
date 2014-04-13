@@ -48,14 +48,18 @@ evaluateSem :: FunctionTable -> SymbolTable -> Expr -> PasTypes
 evaluateSem tf ts (IConst c) = PasInt
 evaluateSem tf ts (DConst c) = PasDbl
 evaluateSem tf ts (SConst s) = PasStr
-evaluateSem tf ts (FuncCall name args) = do
+evaluateSem tf ts (FuncCall name args) =
 	-- check if defined
 	if ((getType $ get tf name) == PasNone) then
 		error "Function undefined!"
 	else
-		-- get ret val from function
-		fceRetType $ ffth''$ get tf name
-		-- TODO: Check insides of a function + args
+		if ((chkFceParams (snd $ ffth'' $ get tf name) (evalSemLst tf ts args)) == PasNone) then
+			-- get ret val from function
+			fceRetType $ ffth''$ get tf name
+		else
+			error "Function argument type mismatch!"
+	where
+			snd (_,x,_,_) = x
 	
 evaluateSem tf ts (Var v) = getType $ get ts v
 evaluateSem tf ts (Add exp1 exp2) = do
@@ -106,13 +110,27 @@ evaluateSem tf ts (Div exp1 exp2) = do
 
 evaluateSem tf ts (Pars exp) = evaluateSem tf ts exp
 
-testTypes :: SymbolTable -> String -> Symbol -> IO SymbolTable
-testTypes ts var value = do
-		if ((getType value) == (getType $ get ts var)) then do
-			-- Type matches perfectly
-			return $ set ts var value
-		else
-			error "Assignment type mismatch!"
+evalSemLst tf ts [] = []
+evalSemLst tf ts (x:xs) = (evaluateSem tf ts x) : (evalSemLst tf ts xs)
+
+chkFceParams :: [(String, PasTypes)] -> [PasTypes] -> PasTypes
+chkFceParams (x:xs) (y:ys)= 
+	if ((snd x) == y) then
+		chkFceParams xs ys
+	else
+		error "Function argument type mismatch!"
+	where
+			snd(_,x) = x
+chkFceParams [] [] = PasNone
+chkFceParams _ _ = error "Function argument count mismatch!"
+
+--testTypes :: SymbolTable -> String -> Symbol -> IO SymbolTable
+--testTypes ts var value = do
+--		if ((getType value) == (getType $ get ts var)) then do
+--			-- Type matches perfectly
+--			return $ set ts var value
+--		else
+--			error "Assignment type mismatch!"
 
 semantic :: FunctionTable -> SymbolTable -> Command -> IO SymbolTable
 semantic tf ts Empty = return ts	-- Empty expression, simple
