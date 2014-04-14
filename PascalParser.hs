@@ -33,7 +33,6 @@ lexal = P.makeTokenParser tokDef
 
 whiteSpace		= P.whiteSpace lexal
 integer			= P.integer lexal
-stringLiteral	= P.stringLiteral lexal
 double 			= P.float lexal
 parens 			= P.parens lexal
 semi			= P.semi lexal
@@ -43,6 +42,11 @@ reservedOp		= P.reservedOp lexal
 dot 			= P.dot lexal
 comma 			= P.comma lexal
 colon			= P.colon lexal
+
+stringLiteral = do
+	(char '\'')
+	s <- manyTill anyChar (char '\'')
+	return $ SConst s
 
 data Command = Empty 	-- this should describe the program structure
 	| Assign String Expr
@@ -217,8 +221,7 @@ term =
 	<|> do		
 		try(parseInteger)
 	<|> do
-		s <- stringLiteral
-		return (SConst s)
+		stringLiteral
 	<|> do
 		try parseIdExpr
 	<|> do
