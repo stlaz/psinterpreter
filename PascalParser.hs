@@ -63,7 +63,7 @@ pascalp = do
 	vars <- option [] variables
 	functionDeclares <- many parseFuncBody
 	reserved "begin"
-	absyntree <- (many cmd)	-- cmd is the actual parsing function
+	absyntree <- (cmd `sepEndBy` semi)	-- cmd is the actual parsing function
 	reserved "end"
 	dot
 	eof						-- EOF should occur after parsing the whole file
@@ -130,24 +130,19 @@ parseFuncBody = do
 
 -- This function deals with commands in the body of the programme and in functions
 cmd = do
-		semi
-		return Empty
-    <|> do 
         try parseAssignment
     <|> do
     	reserved "begin"
-    	commands <- (many cmd)
+    	commands <- (cmd `sepEndBy` semi)
     	reserved "end"
     	return (Seq commands)
     <|> do
     	reserved "writeln"
     	e <- parens expr
-    	semi
     	return (Writeln e)
     <|> do
     	reserved "readln"
     	id <- parens identifier
-    	semi
     	return (Readln id)
     <|> do
     	reserved "if"
@@ -165,7 +160,6 @@ cmd = do
     	return (While cond coms)
    	<|> do
    		e <- expr
-   		semi
    		return (Expr e)
     <?> "cmd"
 
@@ -173,7 +167,6 @@ parseAssignment = do
         v <- identifier
         reservedOp ":="
         e <- expr
-        semi
         return (Assign v e)
 
 

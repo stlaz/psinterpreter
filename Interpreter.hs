@@ -372,8 +372,8 @@ main = do
 				--print symTable
 				print $ trd' absyntree
 				--semantic funcTable symTable (trd' absyntree)
-				--newsym <- interpret funcTable symTable (trd' absyntree)
-				--print newsym
+				newsym <- interpret funcTable symTable (trd' absyntree)
+				print newsym
 				--print $ snd' absyntree
 				--print $ trd' absyntree
 			else
