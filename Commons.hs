@@ -98,7 +98,9 @@ frth'' (_,_,_,x,_) = x
 ffth'' (_,_,_,_,x) = x
 
 getType = fst''
+getInt :: Symbol -> Int
 getInt = snd''
+getDbl :: Symbol -> Double
 getDbl = trd''
 getStr = frth''
 getFnc = ffth''

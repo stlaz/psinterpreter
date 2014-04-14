@@ -205,13 +205,29 @@ evalFuncExpr tf ts binType op sym1 sym2 = do
 --evalList tf ts [] = []
 --evalList tf ts (expr:tail) = (evaluate tf ts expr):(evalList tf ts tail)
 
---evalCond :: FunctionTable -> SymbolTable -> BoolExpr -> IO Bool
---evalCond tf ts (Equal exp1 exp2)    = (evaluate tf ts exp1) == (evaluate tf ts exp2)
+evalCond :: FunctionTable -> SymbolTable -> BoolExpr -> (Bool, IO SymbolTable)
+evalCond tf ts (Equal exp1 exp2)    = do
+	if(types) < 5 then
+		(evalBoolExpr (==) types firstSym secondSym, emptyIOST)
+	else error "shiiiiiiit bro"
+	where 
+		first = evaluate tf ts exp1
+		second = evaluate tf ts exp2
+		firstSym = fst first
+		secondSym = fst second
+		types = binTypes firstSym secondSym
 --evalCond tf ts (NEqual exp1 exp2)   = (evaluate tf ts exp1) /= (evaluate tf ts exp2)
 --evalCond tf ts (IsLess exp1 exp2)   = (evaluate tf ts exp1) < (evaluate tf ts exp2)
 --evalCond tf ts (IsGreat exp1 exp2)  = (evaluate tf ts exp1) > (evaluate tf ts exp2)
 --evalCond tf ts (IsLessE exp1 exp2)  = (evaluate tf ts exp1) <= (evaluate tf ts exp2)
 --evalCond tf ts (IsGreatE exp1 exp2) = (evaluate tf ts exp1) >= (evaluate tf ts exp2)
+
+evalBoolExpr :: (Double -> Double -> Bool) -> Int -> Symbol -> Symbol -> Bool
+evalBoolExpr f types s1 s2 = do
+	case types of
+		1 -> (f (fromIntegral $ getInt s1) (fromIntegral $ getInt s2))
+		2 -> (f (fromIntegral $ getInt s1) (getDbl s2))
+		_ -> False
 
 interpret :: FunctionTable -> SymbolTable -> Command -> IO SymbolTable
 interpret tf ts Empty = return ts	-- Empty expression, simple
