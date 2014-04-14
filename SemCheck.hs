@@ -1,4 +1,4 @@
-module SemCheck ( semantic, evaluateSem ) where
+module SemCheck ( semantic, evaluateSem, chkFunctions ) where
  
 import PascalParser
 
@@ -60,6 +60,18 @@ get (s@(var, val):ss) v =
 		then val
 		else get ss v
 
+chkFunctions ts tf (fce:fces) =
+	 	if ( (getType $ get (funcSemantic tf ts ((fillSymbols (snd $ ffth'' $ get tf (fst fce))) ++ (fillSymbols (trd $ ffth'' $ get tf (fst fce) ))) (frth $ ffth'' $ get tf (fst fce))) "000") == PasNone) then
+			chkFunctions ts tf fces
+		else
+			error "Function semantic failure."
+	where
+		fst (x,_) = x
+		snd (_,x,_,_) = x
+		trd (_,_,x,_) = x
+		frth (_,_,_,x) = x
+chkFunctions _ _ [] = PasNone
+
 evaluateSem :: FunctionTable -> SymbolTable -> Expr -> PasTypes
 evaluateSem tf ts (IConst c) = PasInt
 evaluateSem tf ts (DConst c) = PasDbl
@@ -70,17 +82,12 @@ evaluateSem tf ts (FuncCall name args) =
 		error "Function undefined!"
 	else
 		if ((chkFceParams (snd $ ffth'' $ get tf name) (evalSemLst tf ts args)) == PasNone) then
-			-- check function body
-			if ( (getType $ get (funcSemantic tf ts (fillSymbols (snd $ ffth'' $ get tf name)) (frth $ ffth'' $ get tf name)) "000") == PasNone) then
-				-- get ret val from function
-				fceRetType $ ffth''$ get tf name
-			else
-				error "Function semantic failure!"
+			-- get ret val from function
+			fceRetType $ ffth''$ get tf name
 		else
 			error "Function argument type mismatch!"
 	where
 			snd (_,x,_,_) = x
-			frth (_,_,_,x) = x
 	
 evaluateSem tf ts (Var v) = getType $ get ts v
 evaluateSem tf ts (Add exp1 exp2) = do
@@ -130,6 +137,80 @@ evaluateSem tf ts (Div exp1 exp2) = do
 		trinity = binTypes first second
 
 evaluateSem tf ts (Pars exp) = evaluateSem tf ts exp
+
+fceEvalSem :: FunctionTable -> SymbolTable -> SymbolTable -> Expr -> PasTypes
+fceEvalSem tf gt lt (IConst c) = PasInt
+fceEvalSem tf gt lt (DConst c) = PasDbl
+fceEvalSem tf gt lt (SConst s) = PasStr
+fceEvalSem tf gt lt (FuncCall name args) =
+	-- check if defined
+	if ((getType $ get tf name) == PasNone) then
+		error "Function undefined!"
+	else
+		if ((chkFceParams (snd $ ffth'' $ get tf name) (fceEvalSemLst tf gt lt args)) == PasNone) then
+			-- get ret val from function
+				fceRetType $ ffth''$ get tf name
+		else
+			error "Function argument type mismatch!"
+	where
+			snd (_,x,_,_) = x
+	
+fceEvalSem tf gt lt (Var v) =
+	if ((getType $ get lt v) /= PasNone) then
+		(getType $ get lt v)
+	else
+		(getType $ get gt v)
+fceEvalSem tf gt lt (Add exp1 exp2) = do
+	case trinity of
+		1 -> PasInt
+		2 -> PasDbl
+		3 -> PasDbl
+		4 -> PasDbl
+		5 -> PasStr
+		_ -> error "Addition type mismatch!"
+	where
+		first = fceEvalSem tf gt lt exp1
+		second = fceEvalSem tf gt lt exp2
+		trinity = binTypes first second
+
+fceEvalSem tf gt lt (Sub exp1 exp2) = do
+	case trinity of
+		1 -> PasInt
+		2 -> PasDbl
+		3 -> PasDbl
+		4 -> PasDbl
+		_ -> error "Sub type mismatch!"
+	where
+		first = fceEvalSem tf gt lt exp1
+		second = fceEvalSem tf gt lt exp2
+		trinity = binTypes first second
+
+fceEvalSem tf gt lt (Mult exp1 exp2) = do
+	case trinity of
+		1 -> PasInt
+		2 -> PasDbl
+		3 -> PasDbl
+		4 -> PasDbl
+		_ -> error "Mult type mismatch!"
+	where
+		first = fceEvalSem tf gt lt exp1
+		second = fceEvalSem tf gt lt exp2
+		trinity = binTypes first second
+
+fceEvalSem tf gt lt (Div exp1 exp2) = do
+	case trinity of
+		1 -> PasInt
+		_ -> error "Div type mismatch!"
+	where
+		first = fceEvalSem tf gt lt exp1
+		second = fceEvalSem tf gt lt exp2
+		trinity = binTypes first second
+
+fceEvalSem tf gt lt (Pars exp) = fceEvalSem tf gt lt exp
+
+
+fceEvalSemLst tf gt lt [] = []
+fceEvalSemLst tf gt lt (x:xs) = (fceEvalSem tf gt lt x) : (fceEvalSemLst tf gt lt xs)
 
 evalSemLst tf ts [] = []
 evalSemLst tf ts (x:xs) = (evaluateSem tf ts x) : (evalSemLst tf ts xs)
@@ -196,39 +277,46 @@ semantic tf ts (Expr expr) = do
 
 -- serepes
 funcSemantic :: FunctionTable -> SymbolTable -> SymbolTable -> Command -> SymbolTable
-funcSemantic tf ts lt Empty = ts	-- Empty expression, simple
-funcSemantic tf ts lt (Assign var expr) = do
-		if (getType $ get ts var) == PasNone then
-			error "Variable not defined!"
-		else if ((res) == (getType $ get ts var)) then do
-			-- Type matches perfectly
-			ts
+funcSemantic tf gt lt Empty = gt	-- Empty expression, simple
+funcSemantic tf gt lt (Assign var expr) = do
+		if ((getType $ get lt var) /= PasNone) then
+			if ((res) == (getType $ get lt var)) then
+				-- Type matches perfectly
+				gt
+			else
+				error "Assignment type mismatch!"
+		else if ((getType $ get gt var) /= PasNone) then
+			if ((res) == (getType $ get gt var)) then
+				-- Type matches perfectly
+				gt
+			else
+				error "Assignment type mismatch!"
 		else
-			error "Assignment type mismatch!"
+			error "Variable undecared!"
 	where 
-		res = evaluateSem tf ts expr
+		res = fceEvalSem tf gt lt expr
 
-funcSemantic tf ts lt (Writeln expr) = do
+funcSemantic tf gt lt (Writeln expr) = do
 		if ((res) == PasNone) then
 			error "Type mismatch!"
 		else
-			ts
+			gt
 	where
-		res = evaluateSem tf ts expr
-funcSemantic tf ts lt (Readln id) =
-	if ((getType $ get ts id) == PasNone) then
-		error "Variable undefined!"
+		res = fceEvalSem tf gt lt expr
+funcSemantic tf gt lt (Readln id) =
+	if ((((getType $ get lt id) == PasNone) && (getType $ get gt id) == PasNone)) then
+			error "Variable undefined!"
 	else
 		-- Variable found in symbol table
-		ts
-funcSemantic tf ts lt (Seq []) = ts
-funcSemantic tf ts lt (Seq (com:coms)) = 
-	funcSemantic tf (funcSemantic tf ts lt com) lt (Seq coms)
+		gt
+funcSemantic tf gt lt (Seq []) = gt
+funcSemantic tf gt lt (Seq (com:coms)) = 
+	funcSemantic tf (funcSemantic tf gt lt com) lt (Seq coms)
 
-funcSemantic tf ts lt (Expr expr) = 
+funcSemantic tf gt lt (Expr expr) = 
 		if ((res) == PasNone) then
 			error "Type mismatch!"
 		else
-			ts
+			gt
 	where
-		res = evaluateSem tf ts expr
+		res = fceEvalSem tf gt lt expr
