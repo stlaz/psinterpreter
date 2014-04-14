@@ -314,7 +314,7 @@ main = do
 			let absyntree = parsePascal input fileName
 			let symTable = fillSymbols (fst' absyntree)
 			let funcTable = fillFunc $ snd' absyntree
-			--chkFunctions symTable funcTable
+			--chkFunctions symTable funcTable funcTable
 			--print symTable
 			print $ trd' absyntree
 			--semantic funcTable symTable (trd' absyntree)
