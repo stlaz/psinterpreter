@@ -129,7 +129,7 @@ parseVariable = do
 				else if typeof == "double" then do
 					return PasDbl
 				else do
-					return PasDbl
+					return PasStr
 
 
 parseFuncBody = do
@@ -155,7 +155,7 @@ parseFuncBody = do
 				else if typeof == "double" then do
 					return PasDbl
 				else do
-					return PasDbl
+					return PasStr
 
 -- This function deals with commands in the body of the programme and in functions
 cmd = do
