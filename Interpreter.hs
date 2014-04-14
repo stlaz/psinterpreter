@@ -209,24 +209,76 @@ evalCond :: FunctionTable -> SymbolTable -> BoolExpr -> (Bool, IO SymbolTable)
 evalCond tf ts (Equal exp1 exp2)    = do
 	if(types) < 5 then
 		(evalBoolExpr (==) types firstSym secondSym, emptyIOST)
-	else error "shiiiiiiit bro"
+	else error "Incompatible types in boolean comparison"
 	where 
 		first = evaluate tf ts exp1
 		second = evaluate tf ts exp2
 		firstSym = fst first
 		secondSym = fst second
 		types = binTypes firstSym secondSym
---evalCond tf ts (NEqual exp1 exp2)   = (evaluate tf ts exp1) /= (evaluate tf ts exp2)
---evalCond tf ts (IsLess exp1 exp2)   = (evaluate tf ts exp1) < (evaluate tf ts exp2)
---evalCond tf ts (IsGreat exp1 exp2)  = (evaluate tf ts exp1) > (evaluate tf ts exp2)
---evalCond tf ts (IsLessE exp1 exp2)  = (evaluate tf ts exp1) <= (evaluate tf ts exp2)
---evalCond tf ts (IsGreatE exp1 exp2) = (evaluate tf ts exp1) >= (evaluate tf ts exp2)
+
+evalCond tf ts (NEqual exp1 exp2)   = do
+	if(types) < 5 then
+		(evalBoolExpr (/=) types firstSym secondSym, emptyIOST)
+	else error "Incompatible types in boolean comparison"
+	where 
+		first = evaluate tf ts exp1
+		second = evaluate tf ts exp2
+		firstSym = fst first
+		secondSym = fst second
+		types = binTypes firstSym secondSym
+
+evalCond tf ts (IsLess exp1 exp2)   = do
+	if(types) < 5 then
+		(evalBoolExpr (<) types firstSym secondSym, emptyIOST)
+	else error "Incompatible types in boolean comparison"
+	where 
+		first = evaluate tf ts exp1
+		second = evaluate tf ts exp2
+		firstSym = fst first
+		secondSym = fst second
+		types = binTypes firstSym secondSym
+
+evalCond tf ts (IsGreat exp1 exp2)  = do
+	if(types) < 5 then
+		(evalBoolExpr (>) types firstSym secondSym, emptyIOST)
+	else error "Incompatible types in boolean comparison"
+	where 
+		first = evaluate tf ts exp1
+		second = evaluate tf ts exp2
+		firstSym = fst first
+		secondSym = fst second
+		types = binTypes firstSym secondSym
+
+evalCond tf ts (IsLessE exp1 exp2)  = do
+	if(types) < 5 then
+		(evalBoolExpr (<=) types firstSym secondSym, emptyIOST)
+	else error "Incompatible types in boolean comparison"
+	where 
+		first = evaluate tf ts exp1
+		second = evaluate tf ts exp2
+		firstSym = fst first
+		secondSym = fst second
+		types = binTypes firstSym secondSym
+
+evalCond tf ts (IsGreatE exp1 exp2) = do
+	if(types) < 5 then
+		(evalBoolExpr (>=) types firstSym secondSym, emptyIOST)
+	else error "Incompatible types in boolean comparison"
+	where 
+		first = evaluate tf ts exp1
+		second = evaluate tf ts exp2
+		firstSym = fst first
+		secondSym = fst second
+		types = binTypes firstSym secondSym
 
 evalBoolExpr :: (Double -> Double -> Bool) -> Int -> Symbol -> Symbol -> Bool
 evalBoolExpr f types s1 s2 = do
 	case types of
-		1 -> (f (fromIntegral $ getInt s1) (fromIntegral $ getInt s2))
-		2 -> (f (fromIntegral $ getInt s1) (getDbl s2))
+		1 -> f (fromIntegral $ getInt s1) (fromIntegral $ getInt s2)
+		2 -> f (fromIntegral $ getInt s1) (getDbl s2)
+		3 -> f (getDbl s1) (fromIntegral $ getInt s2)
+		4 -> f (getDbl s1) (getDbl s2)
 		_ -> False
 
 interpret :: FunctionTable -> SymbolTable -> Command -> IO SymbolTable
@@ -284,9 +336,11 @@ interpret tf ts (Seq []) = return ts
 interpret tf ts (Seq (com:coms)) = do
 	ts' <- interpret tf ts com
 	interpret tf ts' (Seq coms)
---interpret tf ts (If cond coms1 coms2) =
---	if(evalCond tf ts cond) then interpret tf ts coms1
---		else interpret tf ts coms2
+interpret tf ts (If cond coms1 coms2) = do
+	if(condRes) then interpret tf ts coms1
+		else interpret tf ts coms2
+	where
+		condRes = fst $ evalCond tf ts cond
 --interpret tf ts (While cond coms) = do
 --	if(evalCond tf ts cond) then do
 --		ts' <- interpret tf ts coms
