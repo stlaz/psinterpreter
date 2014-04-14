@@ -17,6 +17,22 @@ fceRetType foo = fst foo
 	where
 		fst (x,_,_,_) = x
 
+setNone = emptySym
+setInt num = (PasInt, num, 0.0, "", emptyFuncDef)
+setDbl num = (PasDbl, 0, num, "", emptyFuncDef)
+setStr str = (PasStr, 0, 0.0, str, emptyFuncDef)
+setFnc name t pars locals coms = (PasFunc, 0, 0.0, name, (t, pars, locals, coms))
+
+fillSymbols [] = [("000", emptySym)]
+fillSymbols (vh:tail) =
+	if snd vh == PasInt then
+		(fst vh, (setInt 0)):(fillSymbols tail)
+	else if snd vh == PasDbl then
+		(fst vh, (setDbl 0.0)):(fillSymbols tail)
+	else if snd vh == PasStr then
+		(fst vh, (setStr "")):(fillSymbols tail)
+	else error "Unknown variable type.\n"
+
 emptySym :: Symbol
 emptySym = (PasNone, 0, 0.0, "", emptyFuncDef)
 emptyFuncDef = (PasNone, [], [], Empty)
@@ -54,12 +70,17 @@ evaluateSem tf ts (FuncCall name args) =
 		error "Function undefined!"
 	else
 		if ((chkFceParams (snd $ ffth'' $ get tf name) (evalSemLst tf ts args)) == PasNone) then
-			-- get ret val from function
-			fceRetType $ ffth''$ get tf name
+			-- check function body
+			if ( (getType $ get (funcSemantic tf ts (fillSymbols (snd $ ffth'' $ get tf name)) (frth $ ffth'' $ get tf name)) "000") == PasNone) then
+				-- get ret val from function
+				fceRetType $ ffth''$ get tf name
+			else
+				error "Function semantic failure!"
 		else
 			error "Function argument type mismatch!"
 	where
 			snd (_,x,_,_) = x
+			frth (_,_,_,x) = x
 	
 evaluateSem tf ts (Var v) = getType $ get ts v
 evaluateSem tf ts (Add exp1 exp2) = do
@@ -140,7 +161,9 @@ semantic tf ts (Assign var expr) = do
 		else if ((res) == (getType $ get ts var)) then do
 			-- Type matches perfectly
 			return ts
-		else
+		else do
+			print res
+			print (getType $ get ts var)
 			error "Assignment type mismatch!"
 	where 
 		res = evaluateSem tf ts expr
@@ -168,5 +191,44 @@ semantic tf ts (Expr expr) = do
 			error "Type mismatch!"
 		else
 			return ts
+	where
+		res = evaluateSem tf ts expr
+
+-- serepes
+funcSemantic :: FunctionTable -> SymbolTable -> SymbolTable -> Command -> SymbolTable
+funcSemantic tf ts lt Empty = ts	-- Empty expression, simple
+funcSemantic tf ts lt (Assign var expr) = do
+		if (getType $ get ts var) == PasNone then
+			error "Variable not defined!"
+		else if ((res) == (getType $ get ts var)) then do
+			-- Type matches perfectly
+			ts
+		else
+			error "Assignment type mismatch!"
+	where 
+		res = evaluateSem tf ts expr
+
+funcSemantic tf ts lt (Writeln expr) = do
+		if ((res) == PasNone) then
+			error "Type mismatch!"
+		else
+			ts
+	where
+		res = evaluateSem tf ts expr
+funcSemantic tf ts lt (Readln id) =
+	if ((getType $ get ts id) == PasNone) then
+		error "Variable undefined!"
+	else
+		-- Variable found in symbol table
+		ts
+funcSemantic tf ts lt (Seq []) = ts
+funcSemantic tf ts lt (Seq (com:coms)) = 
+	funcSemantic tf (funcSemantic tf ts lt com) lt (Seq coms)
+
+funcSemantic tf ts lt (Expr expr) = 
+		if ((res) == PasNone) then
+			error "Type mismatch!"
+		else
+			ts
 	where
 		res = evaluateSem tf ts expr
