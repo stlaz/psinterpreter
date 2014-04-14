@@ -3,17 +3,18 @@
 @author: 	Stanislav Laznicka <xlazni08@stud.fit.vutbr.cz>
 -}
 
-module PascalParser ( Command(..), Functions(..), Expr(..),
+module PascalParser ( Functions(..), Expr(..),
 					 BoolExpr(..), parsePascal, fst',snd',trd',
 					 PasTypes(..) )  where
 -- module Main ( main ) where
 
 import System.IO
-
 import Text.ParserCombinators.Parsec
 import qualified Text.ParserCombinators.Parsec.Token as P
 import Text.ParserCombinators.Parsec.Expr
 import Text.ParserCombinators.Parsec.Language
+
+import Commons
 
 tokDef = emptyDef
 	{
@@ -55,43 +56,6 @@ stringLiteral = do
 		cd        = ['b',  'n',  'f',  'r',  't',  '\\', '\"', '/']
 		replace = ['\b', '\n', '\f', '\r', '\t', '\\', '\"', '/']
 
-data Command = Empty 	-- this should describe the program structure
-	| Assign String Expr
-	| Writeln Expr
-	| Readln String
-	| Seq [ Command ]
-	| If BoolExpr Command Command
-	| While BoolExpr Command
-	| Expr Expr
-	deriving (Show, Eq)
-
--- Function identifier [(parameters)] type [local variables] function_body
-data Functions = Function String [ (String, PasTypes) ] PasTypes [ (String, PasTypes) ] Command
-	deriving Show
-
-data Expr = IConst Int
-	| SConst String
-	| DConst Double
-	| Var String
-	| Add Expr Expr
-	| Sub Expr Expr
-	| Mult Expr Expr
-	| Div Expr Expr
-	| Pars Expr 		-- parens
-	| FuncCall String [ Expr ]
-	deriving (Show, Eq)
-
-data BoolExpr = Equal Expr Expr
-	| NEqual Expr Expr
-	| IsGreat Expr Expr
-	| IsLess Expr Expr
-	| IsGreatE Expr Expr
-	| IsLessE Expr Expr
-	| BPars BoolExpr
-	deriving (Show, Eq)
-
-data PasTypes = PasNone | PasInt | PasDbl | PasStr | PasFunc
-	deriving (Show, Eq, Ord)
 
 -- starting non-terminal, removes all spaces and comments at the start of the file
 pascalp = do

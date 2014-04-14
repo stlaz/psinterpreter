@@ -2,59 +2,12 @@ module Main ( main ) where
 
 import System.Environment( getArgs )
 
+import Commons
 import PascalParser
-import SemCheck
-
-type SymbolTable = [(String, Symbol)]
-type FunctionTable = [(String, Symbol)]
-type Symbol = (PasTypes, Int, Double, String, (PasTypes, [ (String, PasTypes) ], [ (String, PasTypes) ], Command ))
+--import SemCheck
 
 data Operation = Plus | Minus | Times | Divide
 
-emptyIOSym :: IO Symbol 
-emptyIOSym = do
-	return emptySym
-
-emptyIOST :: IO SymbolTable
-emptyIOST = do
-	return [("", emptySym)]
-
-emptySym :: Symbol
-emptySym = (PasNone, 0, 0.0, "", emptyFuncDef)
-
-emptyFunc :: Symbol
-emptyFunc = setFnc "" PasNone [] [] Empty
-
-emptyFuncDef = (PasNone, [], [], Empty)
-
-fst''  (x,_,_,_,_) = x
-snd''  (_,x,_,_,_) = x
-trd''  (_,_,x,_,_) = x
-frth'' (_,_,_,x,_) = x
-ffth'' (_,_,_,_,x) = x
-
-getType = fst''
-getInt = snd''
-getDbl = trd''
-getStr = frth''
-getFnc = ffth''
-
-getFncCom :: Symbol -> Command
-getFncCom x = frth $ getFnc x
-	where
-		frth (_,_,_,x) = x
-
-setNone = emptySym
-setInt num = (PasInt, num, 0.0, "", emptyFuncDef)
-setDbl num = (PasDbl, 0, num, "", emptyFuncDef)
-setStr str = (PasStr, 0, 0.0, str, emptyFuncDef)
-setFnc name t pars locals coms = (PasFunc, 0, 0.0, name, (t, pars, locals, coms))
-
-set :: SymbolTable -> String -> Symbol -> SymbolTable
-set [] var val = [(var, val)]
-set (s@(v,_):ss) var val =
-	if v == var	then (var, val):ss
-		else s : set ss var val
 {-
 set (s@(v,u):ss) var val =
 	if v == var	then
@@ -64,12 +17,6 @@ set (s@(v,u):ss) var val =
 		stype = getType u
 		stypeNew = getType val
 -}
-get :: SymbolTable -> String -> Symbol	
-get [] _ = error "Not found"
-get (s@(var, val):ss) v =
-	if v == var
-		then val
-		else get ss v
 
 --getF :: FunctionTable -> String -> 	 ([ (String, PasTypes) ], PasTypes, [ (String, PasTypes) ], Command)
 --getF [] _ = error "Not found"
@@ -77,19 +24,6 @@ get (s@(var, val):ss) v =
 --	if v == var
 --		then val
 --		else getF ss v
-
-binTypes x y
-	| (firstType == PasInt) && (secondType == PasInt) = 1		-- Int Int
-	| (firstType == PasInt) && (secondType == PasDbl) = 2		-- Int Dbl
-	| (firstType == PasDbl) && (secondType == PasInt) = 3		-- Dbl Int
-	| (firstType == PasDbl) && (secondType == PasDbl) = 4		-- Dbl Dbl
-	| (firstType == PasStr) && (secondType == PasStr) = 5		-- String String
-	| (firstType == PasFunc) && (secondType == PasFunc) = 6		-- Function Function
-	| (firstType == PasFunc) = 7
-	| (secondType == PasFunc) = 8
-	where
-		firstType = getType x
-		secondType = getType y
 
 interFnc :: FunctionTable -> SymbolTable -> String -> IO SymbolTable
 interFnc tf ts name = do
@@ -271,7 +205,7 @@ evalFuncExpr tf ts binType op sym1 sym2 = do
 --evalList tf ts [] = []
 --evalList tf ts (expr:tail) = (evaluate tf ts expr):(evalList tf ts tail)
 
---evalCond :: FunctionTable -> SymbolTable -> BoolExpr -> Bool
+--evalCond :: FunctionTable -> SymbolTable -> BoolExpr -> IO Bool
 --evalCond tf ts (Equal exp1 exp2)    = (evaluate tf ts exp1) == (evaluate tf ts exp2)
 --evalCond tf ts (NEqual exp1 exp2)   = (evaluate tf ts exp1) /= (evaluate tf ts exp2)
 --evalCond tf ts (IsLess exp1 exp2)   = (evaluate tf ts exp1) < (evaluate tf ts exp2)
@@ -354,21 +288,6 @@ interpret tf ts (Expr expr) = do
 	where
 		res = evaluate tf ts expr
 
-fillSymbols [] = [("000", emptySym)]
-fillSymbols (vh:tail) =
-	if snd vh == PasInt then
-		(fst vh, (setInt 0)):(fillSymbols tail)
-	else if snd vh == PasDbl then
-		(fst vh, (setDbl 0.0)):(fillSymbols tail)
-	else if snd vh == PasStr then
-		(fst vh, (setStr "")):(fillSymbols tail)
-	else error "Unknown variable type.\n"
-
-fillFunc [] = []
-fillFunc ((Function name pars t locals coms):tail) =
-	(name, (setFnc name t pars locals coms)):(fillFunc tail)
-
-
 main = do
 	args <- getArgs
 	if length args /= 1
@@ -379,11 +298,11 @@ main = do
 			let absyntree = parsePascal input fileName
 			let symTable = fillSymbols (fst' absyntree)
 			let funcTable = fillFunc $ snd' absyntree
-			chkFunctions symTable funcTable
+			--chkFunctions symTable funcTable
 			--print symTable
 			print $ trd' absyntree
-			semantic funcTable symTable (trd' absyntree)
-			--newsym <- interpret funcTable symTable (trd' absyntree)
-			--print newsym
+			--semantic funcTable symTable (trd' absyntree)
+			newsym <- interpret funcTable symTable (trd' absyntree)
+			print newsym
 			--print $ snd' absyntree
 			--print $ trd' absyntree
