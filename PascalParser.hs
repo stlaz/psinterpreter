@@ -44,9 +44,16 @@ comma 			= P.comma lexal
 colon			= P.colon lexal
 
 stringLiteral = do
-	(char '\'')
-	s <- manyTill anyChar (char '\'')
+	char '\''
+	s <- manyTill chars (char '\'')
 	return $ SConst s
+	where
+		chars = escaped <|> noneOf "\'"
+		escaped = do char '\\'; choice (zipWith es cd replace)
+		es cd replace = do 
+			char cd; return replace
+		cd        = ['b',  'n',  'f',  'r',  't',  '\\', '\"', '/']
+		replace = ['\b', '\n', '\f', '\r', '\t', '\\', '\"', '/']
 
 data Command = Empty 	-- this should describe the program structure
 	| Assign String Expr
