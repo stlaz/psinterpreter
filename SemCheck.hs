@@ -1,45 +1,12 @@
 module SemCheck ( semantic, evaluateSem, chkFunctions ) where
  
-import PascalParser
-
-type SymbolTable = [(String, Symbol)]
-type FunctionTable = [(String, Symbol)]
-type Symbol = (PasTypes, Int, Double, String, (PasTypes, [ (String, PasTypes) ], [ (String, PasTypes) ], Command ))
-
-
-fst''  (x,_,_,_,_) = x
-snd''  (_,x,_,_,_) = x
-trd''  (_,_,x,_,_) = x
-frth'' (_,_,_,x,_) = x
-ffth'' (_,_,_,_,x) = x
+import Commons
 
 fceRetType foo = fst foo
 	where
 		fst (x,_,_,_) = x
 
-setNone = emptySym
-setInt num = (PasInt, num, 0.0, "", emptyFuncDef)
-setDbl num = (PasDbl, 0, num, "", emptyFuncDef)
-setStr str = (PasStr, 0, 0.0, str, emptyFuncDef)
-setFnc name t pars locals coms = (PasFunc, 0, 0.0, name, (t, pars, locals, coms))
-
-fillSymbols [] = [("000", emptySym)]
-fillSymbols (vh:tail) =
-	if snd vh == PasInt then
-		(fst vh, (setInt 0)):(fillSymbols tail)
-	else if snd vh == PasDbl then
-		(fst vh, (setDbl 0.0)):(fillSymbols tail)
-	else if snd vh == PasStr then
-		(fst vh, (setStr "")):(fillSymbols tail)
-	else error "Unknown variable type.\n"
-
-emptySym :: Symbol
-emptySym = (PasNone, 0, 0.0, "", emptyFuncDef)
-emptyFuncDef = (PasNone, [], [], Empty)
-
-getType = fst''
-
-binTypes x y
+fceBinTypes x y
 	| (x == PasInt) && (y == PasInt) = 1		-- Int Int
 	| (x == PasInt) && (y == PasDbl) = 2		-- Int Dbl
 	| (x == PasDbl) && (y == PasInt) = 3		-- Dbl Int
@@ -47,29 +14,16 @@ binTypes x y
 	| (x == PasStr) && (y == PasStr) = 5		-- String String
 	| otherwise = error "Incompatible types in a binary operation!"
 
-set :: SymbolTable -> String -> Symbol -> SymbolTable
-set [] var val = [(var, val)]
-set (s@(v,_):ss) var val =
-	if v == var	then (var, val):ss
-		else s : set ss var val
-
-get :: SymbolTable -> String -> Symbol	
-get [] _ = emptySym
-get (s@(var, val):ss) v =
-	if v == var
-		then val
-		else get ss v
-
 chkFunctions ts tf (fce:fces) =
-	 	if ( (getType $ get (funcSemantic tf ts ((fillSymbols (snd $ ffth'' $ get tf (fst fce))) ++ (fillSymbols (trd $ ffth'' $ get tf (fst fce) ))) (frth $ ffth'' $ get tf (fst fce))) "000") == PasNone) then
+	 	if ( (getType $ get (funcSemantic tf ts ((fillSymbols (snd' $ getFnc $ get tf (fst fce))) ++ (fillSymbols (trd' $ getFnc $ get tf (fst fce) )) ++ fillSymbols ((fst fce, fst' $ getFnc $ snd fce):[])) (frth' $ getFnc $ get tf (fst fce))) "000") == PasNone) then
 			chkFunctions ts tf fces
 		else
 			error "Function semantic failure."
 	where
-		fst (x,_) = x
-		snd (_,x,_,_) = x
-		trd (_,_,x,_) = x
-		frth (_,_,_,x) = x
+		fst' (x,_,_,_) = x
+		snd' (_,x,_,_) = x
+		trd' (_,_,x,_) = x
+		frth' (_,_,_,x) = x
 chkFunctions _ _ [] = PasNone
 
 evaluateSem :: FunctionTable -> SymbolTable -> Expr -> PasTypes
@@ -81,9 +35,9 @@ evaluateSem tf ts (FuncCall name args) =
 	if ((getType $ get tf name) == PasNone) then
 		error "Function undefined!"
 	else
-		if ((chkFceParams (snd $ ffth'' $ get tf name) (evalSemLst tf ts args)) == PasNone) then
+		if ((chkFceParams (snd $ getFnc $ get tf name) (evalSemLst tf ts args)) == PasNone) then
 			-- get ret val from function
-			fceRetType $ ffth''$ get tf name
+			fceRetType $ getFnc$ get tf name
 		else
 			error "Function argument type mismatch!"
 	where
@@ -101,7 +55,7 @@ evaluateSem tf ts (Add exp1 exp2) = do
 	where
 		first = evaluateSem tf ts exp1
 		second = evaluateSem tf ts exp2
-		trinity = binTypes first second
+		trinity = fceBinTypes first second
 
 evaluateSem tf ts (Sub exp1 exp2) = do
 	case trinity of
@@ -113,7 +67,7 @@ evaluateSem tf ts (Sub exp1 exp2) = do
 	where
 		first = evaluateSem tf ts exp1
 		second = evaluateSem tf ts exp2
-		trinity = binTypes first second
+		trinity = fceBinTypes first second
 
 evaluateSem tf ts (Mult exp1 exp2) = do
 	case trinity of
@@ -125,7 +79,7 @@ evaluateSem tf ts (Mult exp1 exp2) = do
 	where
 		first = evaluateSem tf ts exp1
 		second = evaluateSem tf ts exp2
-		trinity = binTypes first second
+		trinity = fceBinTypes first second
 
 evaluateSem tf ts (Div exp1 exp2) = do
 	case trinity of
@@ -134,7 +88,7 @@ evaluateSem tf ts (Div exp1 exp2) = do
 	where
 		first = evaluateSem tf ts exp1
 		second = evaluateSem tf ts exp2
-		trinity = binTypes first second
+		trinity = fceBinTypes first second
 
 evaluateSem tf ts (Pars exp) = evaluateSem tf ts exp
 
@@ -147,9 +101,9 @@ fceEvalSem tf gt lt (FuncCall name args) =
 	if ((getType $ get tf name) == PasNone) then
 		error "Function undefined!"
 	else
-		if ((chkFceParams (snd $ ffth'' $ get tf name) (fceEvalSemLst tf gt lt args)) == PasNone) then
+		if ((chkFceParams (snd $ getFnc $ get tf name) (fceEvalSemLst tf gt lt args)) == PasNone) then
 			-- get ret val from function
-				fceRetType $ ffth''$ get tf name
+				fceRetType $ getFnc$ get tf name
 		else
 			error "Function argument type mismatch!"
 	where
@@ -171,7 +125,7 @@ fceEvalSem tf gt lt (Add exp1 exp2) = do
 	where
 		first = fceEvalSem tf gt lt exp1
 		second = fceEvalSem tf gt lt exp2
-		trinity = binTypes first second
+		trinity = fceBinTypes first second
 
 fceEvalSem tf gt lt (Sub exp1 exp2) = do
 	case trinity of
@@ -183,7 +137,7 @@ fceEvalSem tf gt lt (Sub exp1 exp2) = do
 	where
 		first = fceEvalSem tf gt lt exp1
 		second = fceEvalSem tf gt lt exp2
-		trinity = binTypes first second
+		trinity = fceBinTypes first second
 
 fceEvalSem tf gt lt (Mult exp1 exp2) = do
 	case trinity of
@@ -195,7 +149,7 @@ fceEvalSem tf gt lt (Mult exp1 exp2) = do
 	where
 		first = fceEvalSem tf gt lt exp1
 		second = fceEvalSem tf gt lt exp2
-		trinity = binTypes first second
+		trinity = fceBinTypes first second
 
 fceEvalSem tf gt lt (Div exp1 exp2) = do
 	case trinity of
@@ -204,7 +158,7 @@ fceEvalSem tf gt lt (Div exp1 exp2) = do
 	where
 		first = fceEvalSem tf gt lt exp1
 		second = fceEvalSem tf gt lt exp2
-		trinity = binTypes first second
+		trinity = fceBinTypes first second
 
 fceEvalSem tf gt lt (Pars exp) = fceEvalSem tf gt lt exp
 
