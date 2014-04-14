@@ -226,6 +226,8 @@ parseIdExpr = do
 
 boolExpr =
 	do
+		try(parens boolExpr)
+	<|> do
 		e1 <- expr
 		v <- cmpOp
 		e2 <- expr
