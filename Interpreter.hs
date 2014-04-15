@@ -322,15 +322,9 @@ interpret tf ts (Writeln expr) = do
         argtype = getType $ fst midres
         result sym = do
             case argtype of
-                PasInt -> show $ getInt midresVal
-                PasDbl -> show $ getDbl midresVal
-                PasStr -> getStr midresVal
-                PasFunc -> do
-                    case getType sym of
-                        PasInt -> show $ getInt sym
-                        PasDbl -> show $ getDbl sym
-                        PasStr -> getStr sym
-                        _ -> "WritelnError"
+                PasInt -> show $ getInt sym
+                PasDbl -> show $ getDbl sym
+                PasStr -> getStr sym
                 _ -> "WritelnError"
     
 interpret tf ts (Readln id) = do
