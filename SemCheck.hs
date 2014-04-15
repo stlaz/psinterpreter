@@ -1,9 +1,10 @@
 -- TODO:
----- Kontrola deklaraci funkci, kontrola deklarace funkce pred jejim pouzitim
+---- Kontrola vice deklaraci/definici funkce, kontrola deklarace funkce pred jejim pouzitim
 ---- if then else, while, bool vyrazy
 ---- pretypovani pri volani funkci - int to double
 
 -- TODO pokud nebude nic lepsiho na praci:
+---- Zkusit opravit Empty porovnani v chkFncTables
 ---- Prepsat prasacky if
 
 module SemCheck ( semantic, evaluateSem, chkFunctions ) where

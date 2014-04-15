@@ -4,7 +4,7 @@ module Commons (PasTypes(..), Command(..), Expr(..), Functions(Function),
 			emptyFuncDef, getType, getInt, getDbl, getStr, getFnc,
 			getFncCom, getFncParams, getFncLocvars, setNone, setInt,
 			setDbl,	setStr, setFnc, binTypes, get, set, chkSymTables,
-			chkFuncDefs )
+			chkFuncDefs, chkFncTables )
 			where
 
 data PasTypes = PasNone | PasInt | PasDbl | PasStr | PasFunc
@@ -107,6 +107,20 @@ chkFuncDefs tf (table:tables) =
             error "Declaration without definition!"
         else
             chkFuncDefs tf tables
+
+chkFncTables :: SymbolTable -> PasTypes
+chkFncTables [] = PasNone
+chkFncTables (table:tables) =
+    if ((getFncCom $ snd table) == Empty) then
+        if ((getFncDec tables (fst table)) == emptySym) then
+            chkFncTables tables
+        else
+            error "Multiple function definitions/declarations of a same name."
+    else
+        if ((getFncDef tables (fst table)) == emptySym) then
+            chkFncTables tables
+        else
+            error "Multiple function definitions/declarations of a same name."
 
 chkSymTables [] _ = []
 chkSymTables ftl@(lt:lts) tf =
