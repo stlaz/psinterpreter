@@ -2,8 +2,9 @@ module Commons (PasTypes(..), Command(..), Expr(..), Functions(Function),
 			BoolExpr(..), SymbolTable, FunctionTable, Symbol, fillSymbols,
 			fillFunc, emptyIOSym, emptyIOST, emptySym, emptyFunc,
 			emptyFuncDef, getType, getInt, getDbl, getStr, getFnc,
-			getFncCom, setNone, setInt, setDbl,	setStr, setFnc, binTypes,
-			get, set, chkSymTables ) where
+			getFncCom, getFncParams, getFncLocvars, setNone, setInt,
+			setDbl,	setStr, setFnc, binTypes, get, set, chkSymTables )
+			where
 
 data PasTypes = PasNone | PasInt | PasDbl | PasStr | PasFunc
 	deriving (Show, Eq, Ord)
