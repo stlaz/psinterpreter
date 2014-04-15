@@ -3,7 +3,7 @@ module Commons (PasTypes(..), Command(..), Expr(..), Functions(Function),
 			fillFunc, emptyIOSym, emptyIOST, emptySym, emptyFunc,
 			emptyFuncDef, getType, getInt, getDbl, getStr, getFnc,
 			getFncCom, setNone, setInt, setDbl,	setStr, setFnc, binTypes,
-			get, set) where
+			get, set, chkSymTables ) where
 
 data PasTypes = PasNone | PasInt | PasDbl | PasStr | PasFunc
 	deriving (Show, Eq, Ord)
@@ -47,8 +47,8 @@ type SymbolTable = [(String, Symbol)]
 type FunctionTable = [(String, Symbol)]
 type Symbol = (PasTypes, Int, Double, String, (PasTypes, [ (String, PasTypes) ], [ (String, PasTypes) ], Command ))
 
-get :: SymbolTable -> String -> Symbol	
-get [] _ = error "Not found"
+get :: SymbolTable -> String -> Symbol
+get [] _ = emptySym
 get (s@(var, val):ss) v =
 	if v == var
 		then val
@@ -74,8 +74,17 @@ fillFunc [] = []
 fillFunc ((Function name pars t locals coms):tail) =
 	(name, (setFnc name t pars locals coms)):(fillFunc tail)
 
+chkSymTables [] _ = []
+chkSymTables ftl@(lt:lts) tf =
+    if ((getType (get (chkSymTables lts tf) (fst lt))) == PasNone) then
+        if ((getType (get tf (fst lt))) == PasNone) then
+            ftl
+        else
+            error "Variable has the same name as a function."
+    else
+        error "Multiple definition of the same variable."
 
-emptyIOSym :: IO Symbol 
+emptyIOSym :: IO Symbol
 emptyIOSym = do
 	return emptySym
 
@@ -106,10 +115,10 @@ getStr = frth''
 getFnc = ffth''
 
 getFncCom :: Symbol -> Command
-getFncCom (_,_,_,_,(_,_,_,x)) = x	
+getFncCom (_,_,_,_,(_,_,_,x)) = x
 
 getFncParams :: Symbol -> [(String, PasTypes)]
-getFncParams (_,_,_,_,(_,x,_,_)) = x 
+getFncParams (_,_,_,_,(_,x,_,_)) = x
 
 getFncLocvars :: Symbol -> [(String, PasTypes)]
 getFncLocvars (_,_,_,_,(_,_,x,_)) = x

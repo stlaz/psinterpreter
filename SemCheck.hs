@@ -1,5 +1,15 @@
+-- TODO:
+---- Kontrola existujicich definic ve fillSymbols fillFunc
+---- Kontrola lokalnich definic vzhldem k funkcni tabulce
+---- Kontrola deklaraci funkci, kontrola deklarace funkce pred jejim pouzitim
+---- if then else, while, bool vyrazy
+---- never more
+
+-- TODO pokud nebude nic lepsiho na praci:
+---- Prepsat prasacky if
+
 module SemCheck ( semantic, evaluateSem, chkFunctions ) where
- 
+
 import Commons
 
 fceRetType foo = fst foo
@@ -15,7 +25,7 @@ fceBinTypes x y
 	| otherwise = error "Incompatible types in a binary operation!"
 
 chkFunctions ts tf (fce:fces) =
-	 	if ( (getType $ get (funcSemantic tf ts ((fillSymbols (snd' $ getFnc $ get tf (fst fce))) ++ (fillSymbols (trd' $ getFnc $ get tf (fst fce) )) ++ fillSymbols ((fst fce, fst' $ getFnc $ snd fce):[])) (frth' $ getFnc $ get tf (fst fce))) "000") == PasNone) then
+	 	if ( (getType $ get (funcSemantic tf ts ((chkSymTables (fillSymbols ((snd' $ getFnc $ get tf (fst fce)) ++ (trd' $ getFnc $ get tf (fst fce) ))) tf)  ++ (fillSymbols ((fst fce, fst' $ getFnc $ snd fce):[]))) (frth' $ getFnc $ get tf (fst fce))) "000") == PasNone) then
 			chkFunctions ts tf fces
 		else
 			error "Function semantic failure."
@@ -42,7 +52,7 @@ evaluateSem tf ts (FuncCall name args) =
 			error "Function argument type mismatch!"
 	where
 			snd (_,x,_,_) = x
-	
+
 evaluateSem tf ts (Var v) = getType $ get ts v
 evaluateSem tf ts (Add exp1 exp2) = do
 	case trinity of
@@ -108,7 +118,7 @@ fceEvalSem tf gt lt (FuncCall name args) =
 			error "Function argument type mismatch!"
 	where
 			snd (_,x,_,_) = x
-	
+
 fceEvalSem tf gt lt (Var v) =
 	if ((getType $ get lt v) /= PasNone) then
 		(getType $ get lt v)
