@@ -106,9 +106,13 @@ getStr = frth''
 getFnc = ffth''
 
 getFncCom :: Symbol -> Command
-getFncCom x = frth $ getFnc x
-	where
-		frth (_,_,_,x) = x
+getFncCom (_,_,_,_,(_,_,_,x)) = x	
+
+getFncParams :: Symbol -> [(String, PasTypes)]
+getFncParams (_,_,_,_,(_,x,_,_)) = x 
+
+getFncLocvars :: Symbol -> [(String, PasTypes)]
+getFncLocvars (_,_,_,_,(_,_,x,_)) = x
 
 setNone = emptySym
 setInt num = (PasInt, num, 0.0, "", emptyFuncDef)
