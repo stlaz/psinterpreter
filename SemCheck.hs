@@ -1,9 +1,7 @@
 -- TODO:
----- Kontrola existujicich definic ve fillSymbols fillFunc
----- Kontrola lokalnich definic vzhldem k funkcni tabulce
 ---- Kontrola deklaraci funkci, kontrola deklarace funkce pred jejim pouzitim
 ---- if then else, while, bool vyrazy
----- never more
+---- pretypovani pri volani funkci - int to double
 
 -- TODO pokud nebude nic lepsiho na praci:
 ---- Prepsat prasacky if
@@ -25,7 +23,13 @@ fceBinTypes x y
 	| otherwise = error "Incompatible types in a binary operation!"
 
 chkFunctions ts tf (fce:fces) =
-	 	if ( (getType $ get (funcSemantic tf ts ((chkSymTables (fillSymbols ((snd' $ getFnc $ get tf (fst fce)) ++ (trd' $ getFnc $ get tf (fst fce) ))) tf)  ++ (fillSymbols ((fst fce, fst' $ getFnc $ snd fce):[]))) (frth' $ getFnc $ get tf (fst fce))) "000") == PasNone) then
+
+	 	-- This if builds a local symbol table from function params, local variables,
+	 	-- checks the local table for multiple definitons.
+	 	-- It then adds the return variable to the local table (name of the function)
+	 	-- and checks the function body.
+	 	-- If successful, it checks the rest of the function table.
+        if ( (getType $ get (funcSemantic tf ts ((chkSymTables (fillSymbols ((snd' $ getFnc $ get tf (fst fce)) ++ (trd' $ getFnc $ get tf (fst fce) ))) tf)  ++ (fillSymbols ((fst fce, fst' $ getFnc $ snd fce):[]))) (frth' $ getFnc $ get tf (fst fce))) "000") == PasNone) then
 			chkFunctions ts tf fces
 		else
 			error "Function semantic failure."
@@ -34,6 +38,7 @@ chkFunctions ts tf (fce:fces) =
 		snd' (_,x,_,_) = x
 		trd' (_,_,x,_) = x
 		frth' (_,_,_,x) = x
+
 chkFunctions _ _ [] = PasNone
 
 evaluateSem :: FunctionTable -> SymbolTable -> Expr -> PasTypes

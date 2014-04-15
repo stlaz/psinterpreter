@@ -3,7 +3,8 @@ module Commons (PasTypes(..), Command(..), Expr(..), Functions(Function),
 			fillFunc, emptyIOSym, emptyIOST, emptySym, emptyFunc,
 			emptyFuncDef, getType, getInt, getDbl, getStr, getFnc,
 			getFncCom, getFncParams, getFncLocvars, setNone, setInt,
-			setDbl,	setStr, setFnc, binTypes, get, set, chkSymTables )
+			setDbl,	setStr, setFnc, binTypes, get, set, chkSymTables,
+			chkFuncDefs )
 			where
 
 data PasTypes = PasNone | PasInt | PasDbl | PasStr | PasFunc
@@ -61,6 +62,20 @@ set (s@(v,_):ss) var val =
 	if v == var	then (var, val):ss
 		else s : set ss var val
 
+getFncDec :: SymbolTable -> String -> Symbol
+getFncDec [] _ = emptySym
+getFncDec (s@(var, val):ss) v =
+	if ((v == var) && ((getFncCom val) == Empty))
+		then val
+		else get ss v
+
+getFncDef :: SymbolTable -> String -> Symbol
+getFncDef [] _ = emptySym
+getFncDef (s@(var, val):ss) v =
+	if ((v == var) && (not ((getFncCom val) == Empty)))
+		then val
+		else get ss v
+
 fillSymbols [] = [("000", emptySym)]
 fillSymbols (vh:tail) =
 	if snd vh == PasInt then
@@ -74,6 +89,24 @@ fillSymbols (vh:tail) =
 fillFunc [] = []
 fillFunc ((Function name pars t locals coms):tail) =
 	(name, (setFnc name t pars locals coms)):(fillFunc tail)
+
+getIndex _ _ [] = 0
+getIndex count name (table:tables) =
+    if (name == (fst table)) then
+        count
+    else
+        getIndex (count + 1) name tables
+
+chkFuncDefs tf [] = tf
+chkFuncDefs tf (table:tables) =
+    if (getFncDec tf (fst table) == emptySym) then
+        -- def
+        chkFuncDefs tf tables
+    else
+        if (getFncDef tf (fst table) == emptySym) then
+            error "Declaration without definition!"
+        else
+            chkFuncDefs tf tables
 
 chkSymTables [] _ = []
 chkSymTables ftl@(lt:lts) tf =
