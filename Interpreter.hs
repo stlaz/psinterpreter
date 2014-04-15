@@ -25,16 +25,33 @@ set (s@(v,u):ss) var val =
 --		then val
 --		else getF ss v
 
-interFnc :: FunctionTable -> SymbolTable -> String -> IO SymbolTable
-interFnc tf ts name = do
+interFnc :: FunctionTable -> SymbolTable -> String -> [ Expr ] -> IO SymbolTable
+interFnc tf ts name args = do
 	symtab <- interpret tf ts $ getFncCom $ get tf name
 	return $ [(name, get symtab name)] ++ symtab
+	where
+		evalPars = evalList tf ts args
+
+--addFuncSymVal :: [(String, PasTypes)] -> [(Symbol,IO SymbolTable)] -> IO SymbolTable
+--addFuncSymVal (var:vars) (arg:args) = 
+--	if(sType == PasFunc) then do
+--		symTab <- snd arg
+--		if(fType == (getType $ snd $ head symTab)) then
+--			return (fst var, head symTab):(addFuncSymVal vars args)
+--		else error "prdel" 
+--	else error "prdel"
+--	where
+--		fType = snd var
+--		sType = getType $ fst arg
+
+evalList tf ts [] = []
+evalList tf ts (expr:tail) = (evaluate tf ts expr):(evalList tf ts tail)
 
 evaluate :: FunctionTable -> SymbolTable -> Expr -> (Symbol, IO SymbolTable)
 evaluate tf ts (IConst c) = (setInt c,emptyIOST)
 evaluate tf ts (DConst c) = (setDbl c,emptyIOST)
 evaluate tf ts (SConst s) = (setStr s,emptyIOST)
-evaluate tf ts (FuncCall name args) = (emptyFunc, interFnc tf ts name)
+evaluate tf ts (FuncCall name args) = (emptyFunc, interFnc tf ts name args)
 evaluate tf ts (Var v) = (get ts v, emptyIOST)
 -- TODO: What happens when exp1 or exp2 each other evaluate to different type?
 evaluate tf ts (Add exp1 exp2) = do
@@ -201,9 +218,6 @@ evalFuncExpr tf ts binType op sym1 sym2 = do
 		secondIO = snd sym2
 		fiIO tab = snd $ head tab
 		seIO tab = snd $ head tab
-
---evalList tf ts [] = []
---evalList tf ts (expr:tail) = (evaluate tf ts expr):(evalList tf ts tail)
 
 evalCond :: FunctionTable -> SymbolTable -> BoolExpr -> (Bool, IO SymbolTable)
 evalCond tf ts (Equal exp1 exp2)    = do

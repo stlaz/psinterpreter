@@ -149,6 +149,7 @@ cmd = do
     	cond <- boolExpr
     	reserved "then"
     	coms1 <- cmd
+    	optional semi
     	reserved "else"
     	coms2 <- cmd
     	return (If cond coms1 coms2)
