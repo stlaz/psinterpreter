@@ -4,7 +4,7 @@ module Commons (PasTypes(..), Command(..), Expr(..), Functions(Function),
 			emptyFuncDef, getType, getInt, getDbl, getStr, getFnc,
 			getFncCom, getFncParams, getFncLocvars, setNone, setInt,
 			setDbl,	setStr, setFnc, binTypes, get, set, chkSymTables,
-			chkFuncDefs, chkFncTables )
+			chkFuncDefs, chkFncTables, getIndex)
 			where
 
 data PasTypes = PasNone | PasInt | PasDbl | PasStr | PasFunc
@@ -104,7 +104,7 @@ chkFuncDefs tf (table:tables) =
         chkFuncDefs tf tables
     else
         if (getFncDef tf (fst table) == emptySym) then
-            error "Declaration without definition!"
+            error ("Declaration without definition: " ++ (fst table))
         else
             chkFuncDefs tf tables
 
@@ -115,12 +115,14 @@ chkFncTables (table:tables) =
         if ((getFncDec tables (fst table)) == emptySym) then
             chkFncTables tables
         else
-            error "Multiple function definitions/declarations of a same name."
+            PasNone
+            --error "Multiple function definitions/declarations of a same name."
     else
         if ((getFncDef tables (fst table)) == emptySym) then
             chkFncTables tables
         else
-            error "Multiple function definitions/declarations of a same name."
+            PasNone
+            --error "Multiple function definitions/declarations of a same name."
 
 chkSymTables [] _ = []
 chkSymTables ftl@(lt:lts) tf =
@@ -128,9 +130,9 @@ chkSymTables ftl@(lt:lts) tf =
         if ((getType (get tf (fst lt))) == PasNone) then
             ftl
         else
-            error "Variable has the same name as a function."
+            error ("Variable has the same name as a function: " ++ (fst lt))
     else
-        error "Multiple definition of the same variable."
+        error ("Multiple definition of the same variable: " ++ (fst lt))
 
 emptyIOSym :: IO Symbol
 emptyIOSym = do

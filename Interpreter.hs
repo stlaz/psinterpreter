@@ -410,7 +410,7 @@ main = do
             let absyntree = parsePascal input fileName
             let symTable = fillSymbols (fst' absyntree)
             let funcTable = fillFunc $ snd' absyntree
-            print funcTable
+            --print funcTable
             if ( (getType (get (chkSymTables symTable funcTable) "000" )) /= PasNone) then
                 error "Error when checking global table."
             else if (chkFncTables funcTable /= PasNone) then
@@ -419,11 +419,11 @@ main = do
                 error "Error when checking function defs and decs."
             else if ((chkFunctions symTable funcTable funcTable) == PasNone) then do
                 --print symTable
-                print $ trd' absyntree
-				--semantic funcTable symTable (trd' absyntree)
-               -- newsym <- interpret funcTable symTable (trd' absyntree)
+                --print $ trd' absyntree
+                semantic funcTable symTable (trd' absyntree)
+                newsym <- interpret funcTable symTable (trd' absyntree)
                -- print newsym
                 --print $ snd' absyntree
-                --print $ trd' absyntree
+                print $ trd' absyntree
 				else
 					error "Function semantic failure."
