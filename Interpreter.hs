@@ -27,22 +27,56 @@ set (s@(v,u):ss) var val =
 
 interFnc :: FunctionTable -> SymbolTable -> String -> [ Expr ] -> IO SymbolTable
 interFnc tf ts name args = do
-    symtab <- interpret tf ts $ getFncCom $ get tf name
+    parsTable <- assignFncPars (getFncParams getFncByName) evalPars
+    symtab <- interpret tf (makeWorkST ts parsTable $ getFncLocvars getFncByName) $ getFncCom $ get tf name
     return $ [(name, get symtab name)] ++ symtab
     where
         evalPars = evalList tf ts args
+        addToST [] st = st
+        addToST (x:xs) st =
+            x:(addToST xs st)
+        getFncByName = get tf name
+        makeSymTab [] = []
+        makeSymTab (x:xs) = (name, makeSym):(makeSymTab xs)
+            where
+                name = fst x
+                stype = snd x
+                makeSym = do
+                    case stype of
+                        PasInt -> setInt 0
+                        PasDbl -> setDbl 0
+                        PasStr -> setStr ""
+        makeWorkST ts evpars locs =
+            addToST (addToST (makeSymTab locs) evpars) ts
 
---addFuncSymVal :: [(String, PasTypes)] -> [(Symbol,IO SymbolTable)] -> IO SymbolTable
---addFuncSymVal (var:vars) (arg:args) = 
---  if(sType == PasFunc) then do
---      symTab <- snd arg
---      if(fType == (getType $ snd $ head symTab)) then
---          return (fst var, head symTab):(addFuncSymVal vars args)
---      else error "prdel" 
---  else error "prdel"
---  where
---      fType = snd var
---      sType = getType $ fst arg
+assignFncPars :: [(String, PasTypes)] -> [(Symbol,IO SymbolTable)] -> IO SymbolTable
+assignFncPars [] [] =
+    return []
+assignFncPars _ [] =
+    error "Wrong number of parameters"
+assignFncPars [] _ =
+    error "Wrong number of parameters"
+assignFncPars f@(var:vars) s@(arg:args) = do
+    newSym <- (assignFncPars vars args)
+    if(sType == PasFunc) then do
+        symTab <- snd arg
+        if(fType == (sFuncType symTab)) then do
+            return $ (fName, snd $ head symTab):newSym
+        else if(fType == PasDbl && ((sFuncType symTab) == PasInt)) then do
+            return $ (fName, setDbl $ fromIntegral $ getInt $ snd $ head symTab):newSym
+        else error $ "Arguments type mismatch at " ++ fName
+    else if (fType == sType) then
+        return $ (fName, sVal):newSym
+    else if (fType == PasDbl && sType == PasInt) then
+        return $ (fName, setDbl $ fromIntegral $ getInt sVal):newSym
+    else error $ "Arguments type mismatch at" ++ fName
+    where
+        fType = snd var
+        fName = fst var
+        sType = getType $ fst arg
+        sVal = fst arg
+        sFuncType symtab = getType $ snd $ head symtab
+
 
 evalList tf ts [] = []
 evalList tf ts (expr:tail) = (evaluate tf ts expr):(evalList tf ts tail)
@@ -376,17 +410,17 @@ main = do
             let absyntree = parsePascal input fileName
             let symTable = fillSymbols (fst' absyntree)
             let funcTable = fillFunc $ snd' absyntree
-            if ( (getType (get (chkSymTables symTable funcTable) "000" )) /= PasNone) then
-                error "Error when checking global table."
+            --if ( (getType (get (chkSymTables symTable funcTable) "000" )) /= PasNone) then 
+                --error "Error when checking global table."
         --  else if (get $ (chkFuncDefs funcTable) "000" /= PasNone) then
         --      error "Error when checking function defs and decs."
-            else if ((chkFunctions symTable funcTable funcTable) == PasNone) then do
+            --else if ((chkFunctions symTable funcTable funcTable) == PasNone) then do
                 --print symTable
-                print $ trd' absyntree
-                --semantic funcTable symTable (trd' absyntree)
-                newsym <- interpret funcTable symTable (trd' absyntree)
-                print newsym
+            print $ trd' absyntree
+            --semantic funcTable symTable (trd' absyntree)
+            newsym <- interpret funcTable symTable (trd' absyntree)
+            print newsym
                 --print $ snd' absyntree
                 --print $ trd' absyntree
-            else
-                error "Function semantic failure!"
+            --else
+            --    error "Function semantic failure!"
