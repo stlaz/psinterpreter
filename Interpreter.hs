@@ -29,10 +29,10 @@ set (s@(v,u):ss) var val =
 interFnc :: FunctionTable -> SymbolTable -> String -> [ Expr ] -> IO SymbolTable
 interFnc tf ts name args = do
     parsTable <- assignFncPars (getFncParams getFncByName) evalPars
-    let ts' = makeWorkST ts parsTable $ getFncLocvars getFncByName
-    symtab <- interpret tf ts' $ getFncCom $ get tf name
-    print $ "This is my cool symtab in function " ++ name ++ "\n" ++ (show symtab) ++ "\n"
-    return $ [(name, get symtab name)] ++ (removeMyJunk (addToST (makeSymTab $ getFncLocvars getFncByName) parsTable) symtab)
+    let ts' = (name, emptySym):(makeWorkST ts parsTable $ getFncLocvars getFncByName)
+    symtab <- interpret tf ts' $ getFncCom $ getFncDef tf name
+    --print $ "This is my cool symtab in function " ++ name ++ "\n" ++ (show symtab) ++ "\n"
+    return $ [(name, get symtab name)] ++ (removeMyJunk ((name, emptySym):(addToST (makeSymTab $ getFncLocvars getFncByName) parsTable)) symtab)
     where
         evalPars = evalList tf ts args
         addToST [] st = st
@@ -301,7 +301,7 @@ evalCond tf ts (IsLess exp1 exp2)   = do
 evalCond tf ts (IsGreat exp1 exp2)  = do
     if(types) < 5 then do
         return (evalBoolNum (>) types firstSym secondSym, emptyST)
-    else if types == 5 then do return (evalBoolStr (<) firstSym secondSym, emptyST)
+    else if types == 5 then do return (evalBoolStr (>) firstSym secondSym, emptyST)
     else if (types > 5 && types < 9) then evalBoolFnc types IsGreater first second
     else error "Incompatible types in boolean comparison"
     where 
@@ -314,7 +314,7 @@ evalCond tf ts (IsGreat exp1 exp2)  = do
 evalCond tf ts (IsLessE exp1 exp2)  = do
     if(types) < 5 then do
         return (evalBoolNum (<=) types firstSym secondSym, emptyST)
-    else if types == 5 then do return (evalBoolStr (<) firstSym secondSym, emptyST)
+    else if types == 5 then do return (evalBoolStr (<=) firstSym secondSym, emptyST)
     else if (types > 5 && types < 9) then evalBoolFnc types IsLowerE first second
     else error "Incompatible types in boolean comparison"
     where 
@@ -327,7 +327,7 @@ evalCond tf ts (IsLessE exp1 exp2)  = do
 evalCond tf ts (IsGreatE exp1 exp2) = do
     if(types) < 5 then do
         return (evalBoolNum (>=) types firstSym secondSym, emptyST)
-    else if types == 5 then do return (evalBoolStr (<) firstSym secondSym, emptyST)
+    else if types == 5 then do return (evalBoolStr (>=) firstSym secondSym, emptyST)
     else if (types > 5 && types < 9) then evalBoolFnc types IsGreaterE first second
     else error "Incompatible types in boolean comparison"
     where 

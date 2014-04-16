@@ -4,7 +4,7 @@ module Commons (PasTypes(..), Command(..), Expr(..), Functions(Function),
 			emptyFuncDef, getType, getInt, getDbl, getStr, getFnc,
 			getFncCom, getFncParams, getFncLocvars, setNone, setInt,
 			setDbl,	setStr, setFnc, binTypes, get, set, chkSymTables,
-			chkFuncDefs, chkFncTables, getIndex)
+			chkFuncDefs, chkFncTables, getIndex, getFncDef)
 			where
 
 data PasTypes = PasNone | PasInt | PasDbl | PasStr | PasFunc

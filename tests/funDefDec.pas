@@ -4,7 +4,7 @@
 
 var a : integer, hovno : double, prdik : string;
 
-function serepes (n : integer) : string;
+function serepes (a : integer) : string;
 
 function lolcode (n : double) : integer;
 	var hovno : integer, retezhoven : string;
@@ -15,18 +15,22 @@ function lolcode (n : double) : integer;
         lolcode := hovno;
 	end
 
-function serepes (n : integer) : string;
+function serepes (a : integer) : string;
     begin
-        if (n > 10) then
+        if (a > 10) then begin
+            writeln('n je vetsi nez 10');
             serepes := 'serepes';
-        else
+            end
+        else begin
+            writeln('n je mensi nez 10');
             serepes := 'neserepes';
+        end
     end
 
 begin
 	if (10<20) then
         begin
-            prdik := serepes(20);
+            prdik := serepes(200000);
         end
     else
         prdik := 'neserepes';
