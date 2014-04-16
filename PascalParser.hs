@@ -152,7 +152,6 @@ cmd = do
     	optional semi
     	reserved "else"
     	coms2 <- option Empty cmd
-    	optional semi
     	return (If cond coms1 coms2)
     <|> do
     	reserved "while"

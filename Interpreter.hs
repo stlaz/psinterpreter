@@ -29,8 +29,10 @@ set (s@(v,u):ss) var val =
 interFnc :: FunctionTable -> SymbolTable -> String -> [ Expr ] -> IO SymbolTable
 interFnc tf ts name args = do
     parsTable <- assignFncPars (getFncParams getFncByName) evalPars
-    symtab <- interpret tf (makeWorkST ts parsTable $ getFncLocvars getFncByName) $ getFncCom $ get tf name
-    return $ [(name, snd $ head symtab)] ++ symtab
+    let ts' = makeWorkST ts parsTable $ getFncLocvars getFncByName
+    symtab <- interpret tf ts' $ getFncCom $ get tf name
+    print $ "This is my cool symtab in function " ++ name ++ "\n" ++ (show symtab) ++ "\n"
+    return $ [(name, get symtab name)] ++ (removeMyJunk (addToST (makeSymTab $ getFncLocvars getFncByName) parsTable) symtab)
     where
         evalPars = evalList tf ts args
         addToST [] st = st
@@ -38,9 +40,9 @@ interFnc tf ts name args = do
             x:(addToST xs st)
         getFncByName = get tf name
         makeSymTab [] = []
-        makeSymTab (x:xs) = (name, makeSym):(makeSymTab xs)
+        makeSymTab (x:xs) = (locname, makeSym):(makeSymTab xs)
             where
-                name = fst x
+                locname = fst x
                 stype = snd x
                 makeSym = do
                     case stype of
@@ -49,6 +51,8 @@ interFnc tf ts name args = do
                         PasStr -> setStr ""
         makeWorkST ts evpars locs =
             addToST (addToST (makeSymTab locs) evpars) ts
+        removeMyJunk [] ys = ys
+        removeMyJunk (x:xs) (y:ys) = removeMyJunk xs ys
 
 assignFncPars :: [(String, PasTypes)] -> [(Symbol,IO SymbolTable)] -> IO SymbolTable
 assignFncPars [] [] =
@@ -475,6 +479,7 @@ interpret tf ts (If cond coms1 coms2) = do
 --      ts' <- interpret tf ts coms
 --      interpret tf ts' (While cond coms)
 --  else return ts
+--  where condRes = evalCond tf ts cond
 
 interpret tf ts (Expr expr) = do
     sym <- snd $ res
@@ -509,8 +514,8 @@ main = do
                 --print $ trd' absyntree
                -- semantic funcTable symTable (trd' absyntree)
                 newsym <- interpret funcTable symTable (trd' absyntree)
-                --print newsym
+                print newsym
                 --print $ snd' absyntree
-                print $ trd' absyntree
+                --print $ trd' absyntree
 				else
 					error "Function semantic failure."
