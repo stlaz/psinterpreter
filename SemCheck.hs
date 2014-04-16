@@ -1,6 +1,5 @@
 -- TODO:
 ---- if then else, while, bool vyrazy
----- Zkusit opravit Empty porovnani v chkFncTable
 
 -- TODO pokud nebude nic lepsiho na praci:
 ---- Prepsat prasacky if
