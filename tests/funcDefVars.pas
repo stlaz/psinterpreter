@@ -1,6 +1,6 @@
 var x : integer, y :integer;
 
-function funkce() : double;
+function funkce() : integer;
 begin
     x := x + 1;
     writeln(x);
@@ -8,10 +8,10 @@ begin
 end
 
 begin
-    x := x + funkce(5+6);
+    x := x + funkce();
     writeln(x);
     readln(x);
-    writeln(funkce(5));
-    funkce(3);
+    writeln(funkce());
+    funkce();
     x := 2;  
 end. 

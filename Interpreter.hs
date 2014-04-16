@@ -6,7 +6,8 @@ import Commons
 import PascalParser
 import SemCheck
 
-data Operation = Plus | Minus | Times | Divide
+data Operation = Plus | Minus | Times | Divide | Equals |
+                 NEquals | IsLower | IsLowerE | IsGreater | IsGreaterE
 
 {-
 set (s@(v,u):ss) var val =
@@ -29,7 +30,7 @@ interFnc :: FunctionTable -> SymbolTable -> String -> [ Expr ] -> IO SymbolTable
 interFnc tf ts name args = do
     parsTable <- assignFncPars (getFncParams getFncByName) evalPars
     symtab <- interpret tf (makeWorkST ts parsTable $ getFncLocvars getFncByName) $ getFncCom $ get tf name
-    return $ [(name, get symtab name)] ++ symtab
+    return $ [(name, snd $ head symtab)] ++ symtab
     where
         evalPars = evalList tf ts args
         addToST [] st = st
@@ -253,10 +254,11 @@ evalFuncExpr tf ts binType op sym1 sym2 = do
         fiIO tab = snd $ head tab
         seIO tab = snd $ head tab
 
-evalCond :: FunctionTable -> SymbolTable -> BoolExpr -> (Bool, IO SymbolTable)
+evalCond :: FunctionTable -> SymbolTable -> BoolExpr -> (IO Bool, IO SymbolTable)
 evalCond tf ts (Equal exp1 exp2)    = do
     if(types) < 5 then
-        (evalBoolExpr (==) types firstSym secondSym, emptyIOST)
+        (evalBoolNum (==) types firstSym secondSym, emptyIOST)
+    else if types == 5 then (evalBoolStr (<) firstSym secondSym, emptyIOST)
     else error "Incompatible types in boolean comparison"
     where 
         first = evaluate tf ts exp1
@@ -267,7 +269,8 @@ evalCond tf ts (Equal exp1 exp2)    = do
 
 evalCond tf ts (NEqual exp1 exp2)   = do
     if(types) < 5 then
-        (evalBoolExpr (/=) types firstSym secondSym, emptyIOST)
+        (evalBoolNum (/=) types firstSym secondSym, emptyIOST)
+    else if types == 5 then (evalBoolStr (<) firstSym secondSym, emptyIOST)
     else error "Incompatible types in boolean comparison"
     where 
         first = evaluate tf ts exp1
@@ -277,8 +280,9 @@ evalCond tf ts (NEqual exp1 exp2)   = do
         types = binTypes firstSym secondSym
 
 evalCond tf ts (IsLess exp1 exp2)   = do
-    if(types) < 5 then
-        (evalBoolExpr (<) types firstSym secondSym, emptyIOST)
+    if types < 5 then
+        (evalBoolNum (<) types firstSym secondSym, emptyIOST)
+    else if types == 5 then (evalBoolStr (<) firstSym secondSym, emptyIOST)
     else error "Incompatible types in boolean comparison"
     where 
         first = evaluate tf ts exp1
@@ -289,7 +293,8 @@ evalCond tf ts (IsLess exp1 exp2)   = do
 
 evalCond tf ts (IsGreat exp1 exp2)  = do
     if(types) < 5 then
-        (evalBoolExpr (>) types firstSym secondSym, emptyIOST)
+        (evalBoolNum (>) types firstSym secondSym, emptyIOST)
+    else if types == 5 then (evalBoolStr (<) firstSym secondSym, emptyIOST)
     else error "Incompatible types in boolean comparison"
     where 
         first = evaluate tf ts exp1
@@ -300,7 +305,8 @@ evalCond tf ts (IsGreat exp1 exp2)  = do
 
 evalCond tf ts (IsLessE exp1 exp2)  = do
     if(types) < 5 then
-        (evalBoolExpr (<=) types firstSym secondSym, emptyIOST)
+        (evalBoolNum (<=) types firstSym secondSym, emptyIOST)
+    else if types == 5 then (evalBoolStr (<) firstSym secondSym, emptyIOST)
     else error "Incompatible types in boolean comparison"
     where 
         first = evaluate tf ts exp1
@@ -311,7 +317,8 @@ evalCond tf ts (IsLessE exp1 exp2)  = do
 
 evalCond tf ts (IsGreatE exp1 exp2) = do
     if(types) < 5 then
-        (evalBoolExpr (>=) types firstSym secondSym, emptyIOST)
+        (evalBoolNum (>=) types firstSym secondSym, emptyIOST)
+    else if types == 5 then (evalBoolStr (<) firstSym secondSym, emptyIOST)
     else error "Incompatible types in boolean comparison"
     where 
         first = evaluate tf ts exp1
@@ -320,14 +327,35 @@ evalCond tf ts (IsGreatE exp1 exp2) = do
         secondSym = fst second
         types = binTypes firstSym secondSym
 
-evalBoolExpr :: (Double -> Double -> Bool) -> Int -> Symbol -> Symbol -> Bool
-evalBoolExpr f types s1 s2 = do
+evalBoolNum :: (Double -> Double -> Bool) -> Int -> Symbol -> Symbol -> IO Bool
+evalBoolNum f types s1 s2 = do
     case types of
-        1 -> f (fromIntegral $ getInt s1) (fromIntegral $ getInt s2)
-        2 -> f (fromIntegral $ getInt s1) (getDbl s2)
-        3 -> f (getDbl s1) (fromIntegral $ getInt s2)
-        4 -> f (getDbl s1) (getDbl s2)
-        _ -> False
+        1 -> return $ f (fromIntegral $ getInt s1) (fromIntegral $ getInt s2)
+        2 -> return $ f (fromIntegral $ getInt s1) (getDbl s2)
+        3 -> return $ f (getDbl s1) (fromIntegral $ getInt s2)
+        4 -> return $ f (getDbl s1) (getDbl s2)
+        _ -> return False
+
+evalBoolStr :: (String -> String -> Bool) -> Symbol -> Symbol -> IO Bool
+evalBoolStr f s1 s2 = do
+    return $ f (getStr s1) (getStr s2)
+
+--evalBoolFnc :: Int -> Operation -> (Symbol, IO SymbolTable) -> (Symbol, IO SymbolTable) -> IO (Bool, SymbolTable)
+--evalBoolFnc btype op ftab stab = do
+--    fstTab <- snd ftab
+--    secTab <- snd stab
+--    let fIO = snd $ head fstTab
+--    let sIO = snd $ head secTab
+--    if btype == 6 then do
+--        let newbtype = binTypes fIO sIO
+--        if newbtype < 5 then
+--            case op of
+--                Equals -> return $ evalBoolNum () fIO sIO
+--        else error "Comparison of incompatible types" 
+--    else error "Comparison of incompatible types"
+--    return (True, [])
+
+
 
 interpret :: FunctionTable -> SymbolTable -> Command -> IO SymbolTable
 interpret tf ts Empty = return ts   -- Empty expression, simple
@@ -353,9 +381,8 @@ interpret tf ts (Writeln expr) = do
     where 
         midres = evaluate tf ts expr
         midresVal = fst midres
-        argtype = getType $ fst midres
         result sym = do
-            case argtype of
+            case getType sym of
                 PasInt -> show $ getInt sym
                 PasDbl -> show $ getDbl sym
                 PasStr -> getStr sym
@@ -379,7 +406,8 @@ interpret tf ts (Seq (com:coms)) = do
     ts' <- interpret tf ts com
     interpret tf ts' (Seq coms)
 interpret tf ts (If cond coms1 coms2) = do
-    if(condRes) then interpret tf ts coms1
+    condVal <- condRes
+    if(condVal) then interpret tf ts coms1
         else interpret tf ts coms2
     where
         condRes = fst $ evalCond tf ts cond
@@ -410,7 +438,7 @@ main = do
             let absyntree = parsePascal input fileName
             let symTable = fillSymbols (fst' absyntree)
             let funcTable = fillFunc $ snd' absyntree
-            print funcTable
+            --print funcTable
             if ( (getType (get (chkSymTables symTable funcTable) "000" )) /= PasNone) then
                 error "Error when checking global table."
             else if (chkFncTables funcTable /= PasNone) then
@@ -422,7 +450,7 @@ main = do
                 --print $ trd' absyntree
                -- semantic funcTable symTable (trd' absyntree)
                 newsym <- interpret funcTable symTable (trd' absyntree)
-                print newsym
+                --print newsym
                 --print $ snd' absyntree
                 print $ trd' absyntree
 				else
