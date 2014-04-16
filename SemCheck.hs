@@ -252,7 +252,6 @@ semantic tf ts (Expr expr) = do
 	where
 		res = evaluateSem tf ts expr
 
--- serepes
 funcSemantic :: String -> FunctionTable -> SymbolTable -> SymbolTable -> Command -> SymbolTable
 funcSemantic id tf gt lt Empty = gt	-- Empty expression, simple
 funcSemantic id tf gt lt (Assign var expr) = do
@@ -290,11 +289,13 @@ funcSemantic id tf gt lt (Seq []) = gt
 funcSemantic id tf gt lt (Seq (com:coms)) =
 	funcSemantic id tf (funcSemantic id tf gt lt com) lt (Seq coms)
 
---funcSemantic tf ts (If cond coms1 coms2) = do
---    if(condRes) then interpret tf ts coms1
- --       else interpret tf ts coms2
---    where
---        condRes = fst $ evalCond tf ts cond
+funcSemantic id tf gt lt (If cond coms1 coms2) = 
+	if ((semFceEvalCond id tf gt lt cond) == PasNone) then
+		error ("Type mismatch in bool expression in function: " ++ id)
+	else do
+		ts' <- funcSemantic id tf gt lt coms1
+		ts' <- funcSemantic id tf gt lt coms2
+		return ts'
 
 funcSemantic id tf gt lt (Expr expr) =
 		if ((res) == PasNone) then
@@ -370,3 +371,70 @@ semEvalCond tf ts (IsGreatE exp1 exp2) = do
 	where
         fstCon = evaluateSem tf ts exp1
         sndCon = evaluateSem tf ts exp2
+
+semFceEvalCond :: String -> FunctionTable -> SymbolTable -> SymbolTable -> BoolExpr -> PasTypes
+semFceEvalCond id tf gt lt (Equal exp1 exp2)    = do
+    if((fstCon == sndCon) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
+		fstCon
+	else if (((fstCon == PasDbl) || (sndCon == PasDbl)) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
+		PasDbl
+	else
+		error ("Type mismatch in bool expression in function: " ++ id)
+	where
+        fstCon = fceEvalSem id tf gt lt exp1
+        sndCon = fceEvalSem id tf gt lt exp2
+
+semFceEvalCond id tf gt lt (NEqual exp1 exp2)   = do
+    if((fstCon == sndCon) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
+		fstCon
+	else if (((fstCon == PasDbl) || (sndCon == PasDbl)) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
+		PasDbl
+	else
+		error ("Type mismatch in bool expression in function: " ++ id)
+	where
+        fstCon = fceEvalSem id tf gt lt exp1
+        sndCon = fceEvalSem id tf gt lt exp2
+
+semFceEvalCond id tf gt lt (IsLess exp1 exp2)   = do
+    if((fstCon == sndCon) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
+		fstCon
+	else if (((fstCon == PasDbl) || (sndCon == PasDbl)) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
+		PasDbl
+	else
+		error ("Type mismatch in bool expression in function: " ++ id)
+	where
+        fstCon = fceEvalSem id tf gt lt exp1
+        sndCon = fceEvalSem id tf gt lt exp2
+
+semFceEvalCond id tf gt lt (IsGreat exp1 exp2)  = do
+    if((fstCon == sndCon) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
+		fstCon
+	else if (((fstCon == PasDbl) || (sndCon == PasDbl)) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
+		PasDbl
+	else
+		error ("Type mismatch in bool expression in function: " ++ id)
+    where
+        fstCon = fceEvalSem id tf gt lt exp1
+        sndCon = fceEvalSem id tf gt lt exp2
+
+semFceEvalCond id tf gt lt (IsLessE exp1 exp2)  = do
+    if((fstCon == sndCon) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
+		fstCon
+	else if (((fstCon == PasDbl) || (sndCon == PasDbl)) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
+		PasDbl
+	else
+		error ("Type mismatch in bool expression in function: " ++ id)
+	where
+        fstCon = fceEvalSem id tf gt lt exp1
+        sndCon = fceEvalSem id tf gt lt exp2
+
+semFceEvalCond id tf gt lt (IsGreatE exp1 exp2) = do
+    if((fstCon == sndCon) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
+		fstCon
+	else if (((fstCon == PasDbl) || (sndCon == PasDbl)) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
+		PasDbl
+	else
+		error ("Type mismatch in bool expression in function: " ++ id)
+	where
+        fstCon = fceEvalSem id tf gt lt exp1
+        sndCon = fceEvalSem id tf gt lt exp2

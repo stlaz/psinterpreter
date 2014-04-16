@@ -13,15 +13,18 @@ function lolcode (n : double) : integer;
         lolcode := serepes(hovno);
 	end
 
-function serepes (n : integer) : integer;
+function serepes (n : integer) : string;
     begin
-        serepes := n;
+        if (n > 10) then
+            serepes := 'serepes';
+        else
+            serepes := 'neserepes';
     end
 
 begin
 	if (10<20) then
         begin
-            prdik := 'serepes';
+            prdik := serepes(20);
         end
     else
         prdik := 'neserepes';
