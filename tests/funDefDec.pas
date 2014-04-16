@@ -4,13 +4,15 @@
 
 var a : integer, hovno : double, prdik : string;
 
-function serepes (n : integer) : integer;
+function serepes (n : integer) : string;
 
 function lolcode (n : double) : integer;
-	var hovno : integer;
+	var hovno : integer, retezhoven : string;
 	begin
         hovno := 3;
-        lolcode := serepes(hovno);
+        retezhoven := serepes(hovno);
+        writeln(retezhoven);
+        lolcode := hovno;
 	end
 
 function serepes (n : integer) : string;
