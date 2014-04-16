@@ -474,12 +474,14 @@ interpret tf ts (If cond coms1 coms2) = do
         else interpret tf ts coms2
     where
         condRes = evalCond tf ts cond
---interpret tf ts (While cond coms) = do
---  if(evalCond tf ts cond) then do
---      ts' <- interpret tf ts coms
---      interpret tf ts' (While cond coms)
---  else return ts
---  where condRes = evalCond tf ts cond
+interpret tf ts (While cond coms) = do
+    condTup <- condRes
+    if(fst condTup) then do
+      ts' <- interpret tf ts coms
+      interpret tf ts' (While cond coms)
+    else return ts
+    where
+        condRes = evalCond tf ts cond
 
 interpret tf ts (Expr expr) = do
     sym <- snd $ res
