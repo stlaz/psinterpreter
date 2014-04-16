@@ -1,6 +1,6 @@
 module Commons (PasTypes(..), Command(..), Expr(..), Functions(Function),
 			BoolExpr(..), SymbolTable, FunctionTable, Symbol, fillSymbols,
-			fillFunc, emptyIOSym, emptyIOST, emptySym, emptyFunc,
+			fillFunc, emptyIOSym, emptyIOST, emptyST, emptySym, emptyFunc,
 			emptyFuncDef, getType, getInt, getDbl, getStr, getFnc,
 			getFncCom, getFncParams, getFncLocvars, setNone, setInt,
 			setDbl,	setStr, setFnc, binTypes, get, set, chkSymTables,
@@ -139,6 +139,9 @@ emptyIOSym = do
 emptyIOST :: IO SymbolTable
 emptyIOST = do
 	return [("", emptySym)]
+
+emptyST :: SymbolTable
+emptyST = [("", emptySym)]
 
 emptySym :: Symbol
 emptySym = (PasNone, 0, 0.0, "", emptyFuncDef)

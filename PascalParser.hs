@@ -148,10 +148,11 @@ cmd = do
     	reserved "if"
     	cond <- boolExpr
     	reserved "then"
-    	coms1 <- cmd
+    	coms1 <- option Empty cmd
     	optional semi
     	reserved "else"
-    	coms2 <- cmd
+    	coms2 <- option Empty cmd
+    	optional semi
     	return (If cond coms1 coms2)
     <|> do
     	reserved "while"

@@ -254,11 +254,12 @@ evalFuncExpr tf ts binType op sym1 sym2 = do
         fiIO tab = snd $ head tab
         seIO tab = snd $ head tab
 
-evalCond :: FunctionTable -> SymbolTable -> BoolExpr -> (IO Bool, IO SymbolTable)
+evalCond :: FunctionTable -> SymbolTable -> BoolExpr -> IO (Bool, SymbolTable)
 evalCond tf ts (Equal exp1 exp2)    = do
-    if(types) < 5 then
-        (evalBoolNum (==) types firstSym secondSym, emptyIOST)
-    else if types == 5 then (evalBoolStr (<) firstSym secondSym, emptyIOST)
+    if(types) < 5 then do
+        return (evalBoolNum (==) types firstSym secondSym, emptyST)
+    else if types == 5 then do return (evalBoolStr (<) firstSym secondSym, emptyST)
+    else if (types > 5 && types < 9) then evalBoolFnc types Equals first second
     else error "Incompatible types in boolean comparison"
     where 
         first = evaluate tf ts exp1
@@ -268,9 +269,10 @@ evalCond tf ts (Equal exp1 exp2)    = do
         types = binTypes firstSym secondSym
 
 evalCond tf ts (NEqual exp1 exp2)   = do
-    if(types) < 5 then
-        (evalBoolNum (/=) types firstSym secondSym, emptyIOST)
-    else if types == 5 then (evalBoolStr (<) firstSym secondSym, emptyIOST)
+    if(types) < 5 then do
+        return (evalBoolNum (/=) types firstSym secondSym, emptyST)
+    else if types == 5 then do return (evalBoolStr (<) firstSym secondSym, emptyST)
+    else if (types > 5 && types < 9) then evalBoolFnc types NEquals first second
     else error "Incompatible types in boolean comparison"
     where 
         first = evaluate tf ts exp1
@@ -280,9 +282,10 @@ evalCond tf ts (NEqual exp1 exp2)   = do
         types = binTypes firstSym secondSym
 
 evalCond tf ts (IsLess exp1 exp2)   = do
-    if types < 5 then
-        (evalBoolNum (<) types firstSym secondSym, emptyIOST)
-    else if types == 5 then (evalBoolStr (<) firstSym secondSym, emptyIOST)
+    if types < 5 then do
+        return (evalBoolNum (<) types firstSym secondSym, emptyST)
+    else if types == 5 then do return (evalBoolStr (<) firstSym secondSym, emptyST)
+    else if (types > 5 && types < 9) then evalBoolFnc types IsLower first second
     else error "Incompatible types in boolean comparison"
     where 
         first = evaluate tf ts exp1
@@ -292,9 +295,10 @@ evalCond tf ts (IsLess exp1 exp2)   = do
         types = binTypes firstSym secondSym
 
 evalCond tf ts (IsGreat exp1 exp2)  = do
-    if(types) < 5 then
-        (evalBoolNum (>) types firstSym secondSym, emptyIOST)
-    else if types == 5 then (evalBoolStr (<) firstSym secondSym, emptyIOST)
+    if(types) < 5 then do
+        return (evalBoolNum (>) types firstSym secondSym, emptyST)
+    else if types == 5 then do return (evalBoolStr (<) firstSym secondSym, emptyST)
+    else if (types > 5 && types < 9) then evalBoolFnc types IsGreater first second
     else error "Incompatible types in boolean comparison"
     where 
         first = evaluate tf ts exp1
@@ -304,9 +308,10 @@ evalCond tf ts (IsGreat exp1 exp2)  = do
         types = binTypes firstSym secondSym
 
 evalCond tf ts (IsLessE exp1 exp2)  = do
-    if(types) < 5 then
-        (evalBoolNum (<=) types firstSym secondSym, emptyIOST)
-    else if types == 5 then (evalBoolStr (<) firstSym secondSym, emptyIOST)
+    if(types) < 5 then do
+        return (evalBoolNum (<=) types firstSym secondSym, emptyST)
+    else if types == 5 then do return (evalBoolStr (<) firstSym secondSym, emptyST)
+    else if (types > 5 && types < 9) then evalBoolFnc types IsLowerE first second
     else error "Incompatible types in boolean comparison"
     where 
         first = evaluate tf ts exp1
@@ -316,9 +321,10 @@ evalCond tf ts (IsLessE exp1 exp2)  = do
         types = binTypes firstSym secondSym
 
 evalCond tf ts (IsGreatE exp1 exp2) = do
-    if(types) < 5 then
-        (evalBoolNum (>=) types firstSym secondSym, emptyIOST)
-    else if types == 5 then (evalBoolStr (<) firstSym secondSym, emptyIOST)
+    if(types) < 5 then do
+        return (evalBoolNum (>=) types firstSym secondSym, emptyST)
+    else if types == 5 then do return (evalBoolStr (<) firstSym secondSym, emptyST)
+    else if (types > 5 && types < 9) then evalBoolFnc types IsGreaterE first second
     else error "Incompatible types in boolean comparison"
     where 
         first = evaluate tf ts exp1
@@ -327,33 +333,86 @@ evalCond tf ts (IsGreatE exp1 exp2) = do
         secondSym = fst second
         types = binTypes firstSym secondSym
 
-evalBoolNum :: (Double -> Double -> Bool) -> Int -> Symbol -> Symbol -> IO Bool
+evalBoolNum :: (Double -> Double -> Bool) -> Int -> Symbol -> Symbol -> Bool
 evalBoolNum f types s1 s2 = do
     case types of
-        1 -> return $ f (fromIntegral $ getInt s1) (fromIntegral $ getInt s2)
-        2 -> return $ f (fromIntegral $ getInt s1) (getDbl s2)
-        3 -> return $ f (getDbl s1) (fromIntegral $ getInt s2)
-        4 -> return $ f (getDbl s1) (getDbl s2)
-        _ -> return False
+        1 -> f (fromIntegral $ getInt s1) (fromIntegral $ getInt s2)
+        2 -> f (fromIntegral $ getInt s1) (getDbl s2)
+        3 -> f (getDbl s1) (fromIntegral $ getInt s2)
+        4 -> f (getDbl s1) (getDbl s2)
+        _ -> False
 
-evalBoolStr :: (String -> String -> Bool) -> Symbol -> Symbol -> IO Bool
-evalBoolStr f s1 s2 = do
-    return $ f (getStr s1) (getStr s2)
+evalBoolStr :: (String -> String -> Bool) -> Symbol -> Symbol -> Bool
+evalBoolStr f s1 s2 = f (getStr s1) (getStr s2)
 
---evalBoolFnc :: Int -> Operation -> (Symbol, IO SymbolTable) -> (Symbol, IO SymbolTable) -> IO (Bool, SymbolTable)
---evalBoolFnc btype op ftab stab = do
---    fstTab <- snd ftab
---    secTab <- snd stab
---    let fIO = snd $ head fstTab
---    let sIO = snd $ head secTab
---    if btype == 6 then do
---        let newbtype = binTypes fIO sIO
---        if newbtype < 5 then
---            case op of
---                Equals -> return $ evalBoolNum () fIO sIO
---        else error "Comparison of incompatible types" 
---    else error "Comparison of incompatible types"
---    return (True, [])
+evalBoolFnc :: Int -> Operation -> (Symbol, IO SymbolTable) -> (Symbol, IO SymbolTable) -> IO (Bool, SymbolTable)
+-- I am a terrible person.
+evalBoolFnc btype op ftab stab = do
+    fstTab <- snd ftab
+    secTab <- snd stab
+    let fIO = snd $ head fstTab
+    let sIO = snd $ head secTab
+    if btype == 6 then do
+        let newbtype = binTypes fIO sIO
+        if newbtype < 5 then
+            case op of
+                Equals -> return $ (evalBoolNum (==) newbtype fIO sIO, tail secTab)
+                NEquals -> return $ (evalBoolNum (/=) newbtype fIO sIO, tail secTab)
+                IsLower -> return $ (evalBoolNum (<) newbtype fIO sIO, tail secTab)
+                IsLowerE -> return $ (evalBoolNum (<=) newbtype fIO sIO, tail secTab)
+                IsGreater -> return $ (evalBoolNum (>) newbtype fIO sIO, tail secTab)
+                IsGreaterE -> return $ (evalBoolNum (>=) newbtype fIO sIO, tail secTab)
+        else if newbtype == 5 then
+            case op of
+                Equals -> return $ (evalBoolStr (==) fIO sIO, tail secTab)
+                NEquals -> return $ (evalBoolStr (/=) fIO sIO, tail secTab)
+                IsLower -> return $ (evalBoolStr (<) fIO sIO, tail secTab)
+                IsLowerE -> return $ (evalBoolStr (<=) fIO sIO, tail secTab)
+                IsGreater -> return $ (evalBoolStr (>) fIO sIO, tail secTab)
+                IsGreaterE -> return $ (evalBoolStr (>=) fIO sIO, tail secTab)
+        else error "Comparison of incompatible types"
+    else if btype == 7 then do
+        let newbtype = binTypes fIO sSym
+        if newbtype < 5 then
+            case op of
+                Equals -> return $ (evalBoolNum (==) newbtype fIO sSym, tail fstTab)
+                NEquals -> return $ (evalBoolNum (/=) newbtype fIO sSym, tail fstTab)
+                IsLower -> return $ (evalBoolNum (<) newbtype fIO sSym, tail fstTab)
+                IsLowerE -> return $ (evalBoolNum (<=) newbtype fIO sSym, tail fstTab)
+                IsGreater -> return $ (evalBoolNum (>) newbtype fIO sSym, tail fstTab)
+                IsGreaterE -> return $ (evalBoolNum (>=) newbtype fIO sSym, tail fstTab)
+        else if newbtype == 5 then
+            case op of
+                Equals -> return $ (evalBoolStr (==) fIO sSym, tail fstTab)
+                NEquals -> return $ (evalBoolStr (/=) fIO sSym, tail fstTab)
+                IsLower -> return $ (evalBoolStr (<) fIO sSym, tail fstTab)
+                IsLowerE -> return $ (evalBoolStr (<=) fIO sSym, tail fstTab)
+                IsGreater -> return $ (evalBoolStr (>) fIO sSym, tail fstTab)
+                IsGreaterE -> return $ (evalBoolStr (>=) fIO sSym, tail fstTab)
+        else error "Comparison of incompatible types"
+    else if btype == 8 then do
+        let newbtype = binTypes fSym sIO
+        if newbtype < 5 then
+            case op of
+                Equals -> return $ (evalBoolNum (==) newbtype fSym sIO, tail secTab)
+                NEquals -> return $ (evalBoolNum (/=) newbtype fSym sIO, tail secTab)
+                IsLower -> return $ (evalBoolNum (<) newbtype fSym sIO, tail secTab)
+                IsLowerE -> return $ (evalBoolNum (<=) newbtype fSym sIO, tail secTab)
+                IsGreater -> return $ (evalBoolNum (>) newbtype fSym sIO, tail secTab)
+                IsGreaterE -> return $ (evalBoolNum (>=) newbtype fSym sIO, tail secTab)
+        else if newbtype == 5 then
+            case op of
+                Equals -> return $ (evalBoolStr (==) fSym sIO, tail secTab)
+                NEquals -> return $ (evalBoolStr (/=) fSym sIO, tail secTab)
+                IsLower -> return $ (evalBoolStr (<) fSym sIO, tail secTab)
+                IsLowerE -> return $ (evalBoolStr (<=) fSym sIO, tail secTab)
+                IsGreater -> return $ (evalBoolStr (>) fSym sIO, tail secTab)
+                IsGreaterE -> return $ (evalBoolStr (>=) fSym sIO, tail secTab)
+        else error "Comparison of incompatible types"
+    else error "Comparison of incompatible types"
+    where
+        fSym = fst ftab
+        sSym = fst stab
 
 
 
@@ -406,11 +465,11 @@ interpret tf ts (Seq (com:coms)) = do
     ts' <- interpret tf ts com
     interpret tf ts' (Seq coms)
 interpret tf ts (If cond coms1 coms2) = do
-    condVal <- condRes
-    if(condVal) then interpret tf ts coms1
+    condTup <- condRes
+    if(fst condTup) then interpret tf ts coms1
         else interpret tf ts coms2
     where
-        condRes = fst $ evalCond tf ts cond
+        condRes = evalCond tf ts cond
 --interpret tf ts (While cond coms) = do
 --  if(evalCond tf ts cond) then do
 --      ts' <- interpret tf ts coms
