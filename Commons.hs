@@ -67,14 +67,14 @@ getFncDec [] _ = emptySym
 getFncDec (s@(var, val):ss) v =
 	if ((v == var) && ((getFncCom val) == Empty))
 		then val
-		else get ss v
+		else getFncDec ss v
 
 getFncDef :: SymbolTable -> String -> Symbol
 getFncDef [] _ = emptySym
 getFncDef (s@(var, val):ss) v =
-	if ((v == var) && (not ((getFncCom val) == Empty)))
+	if ((v == var) && ((getFncCom val) /= Empty))
 		then val
-		else get ss v
+		else getFncDef ss v
 
 fillSymbols [] = [("000", emptySym)]
 fillSymbols (vh:tail) =
@@ -110,19 +110,17 @@ chkFuncDefs tf (table:tables) =
 
 chkFncTables :: SymbolTable -> PasTypes
 chkFncTables [] = PasNone
-chkFncTables (table:tables) =
-    if ((getFncCom $ snd table) == Empty) then
+chkFncTables (table:tables) = do
+    if (((getFncCom $ snd table) == Empty)) then
         if ((getFncDec tables (fst table)) == emptySym) then
             chkFncTables tables
-        else
-            PasNone
-            --error "Multiple function definitions/declarations of a same name."
+        else 
+            error "Multiple function declarations of the same name."
     else
         if ((getFncDef tables (fst table)) == emptySym) then
             chkFncTables tables
         else
-            PasNone
-            --error "Multiple function definitions/declarations of a same name."
+            error "Multiple function definitions of the same name."
 
 chkSymTables [] _ = []
 chkSymTables ftl@(lt:lts) tf =
