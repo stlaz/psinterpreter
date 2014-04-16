@@ -514,7 +514,7 @@ main = do
             else if ((chkFunctions symTable funcTable funcTable) == PasNone) then do
                 --print symTable
                 --print $ trd' absyntree
-               -- semantic funcTable symTable (trd' absyntree)
+                semantic funcTable symTable (trd' absyntree)
                 newsym <- interpret funcTable symTable (trd' absyntree)
                 print newsym
                 --print $ snd' absyntree

@@ -4,7 +4,7 @@
 
 var a : integer, hovno : double, prdik : string;
 
-function serepes (a : integer) : string;
+function serepes (a : string) : string;
 
 function lolcode (n : double) : integer;
 	var hovno : integer, retezhoven : string;
@@ -36,4 +36,9 @@ begin
         prdik := 'neserepes';
     a := lolcode(3);
 	writeln(prdik);
+    while(a<20) do
+        begin
+        writeln('cyklipes');
+        a := a + 1;
+    end;
 end.

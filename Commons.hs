@@ -4,7 +4,7 @@ module Commons (PasTypes(..), Command(..), Expr(..), Functions(Function),
 			emptyFuncDef, getType, getInt, getDbl, getStr, getFnc,
 			getFncCom, getFncParams, getFncLocvars, setNone, setInt,
 			setDbl,	setStr, setFnc, binTypes, get, set, chkSymTables,
-			chkFuncDefs, chkFncTables, getIndex, getFncDef)
+			chkFuncDefs, chkFncTables, getIndex, getFncDef, getFncRet)
 			where
 
 data PasTypes = PasNone | PasInt | PasDbl | PasStr | PasFunc
@@ -105,6 +105,10 @@ chkFuncDefs tf (table:tables) =
     else
         if (getFncDef tf (fst table) == emptySym) then
             error ("Declaration without definition: " ++ (fst table))
+        else if (getFncParams (getFncDec tf (fst table)) /= getFncParams (getFncDef tf (fst table))) then
+            error ("Function declaration doesnt match the function definition: " ++ (fst table))
+        else if (getFncRet (getFncDec tf (fst table)) /= getFncRet (getFncDef tf (fst table))) then
+            error ("Function declaration doesnt match the function definition: " ++ (fst table))
         else
             chkFuncDefs tf tables
 
@@ -164,6 +168,9 @@ getDbl :: Symbol -> Double
 getDbl = trd''
 getStr = frth''
 getFnc = ffth''
+
+getFncRet :: Symbol -> PasTypes
+getFncRet (_,_,_,_,(x,_,_,_)) = x
 
 getFncCom :: Symbol -> Command
 getFncCom (_,_,_,_,(_,_,_,x)) = x

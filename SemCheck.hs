@@ -1,5 +1,5 @@
 -- TODO:
----- if then else, while, bool vyrazy
+---- kontrola detailu deklarace vs. definice
 
 -- TODO pokud nebude nic lepsiho na praci:
 ---- Prepsat prasacky if
@@ -244,6 +244,13 @@ semantic tf ts (If cond coms1 coms2) =
 		ts' <- semantic tf ts coms2
 		return ts'
 
+semantic tf ts (While cond coms) = do
+  if ((semEvalCond tf ts cond) == PasNone) then
+		error "Type mismatch in bool expression."
+	else do
+		ts' <- semantic tf ts coms
+		return ts'
+
 semantic tf ts (Expr expr) = do
 		if ((res) == PasNone) then
 			error "Type mismatch!"
@@ -295,6 +302,13 @@ funcSemantic id tf gt lt (If cond coms1 coms2) =
 	else do
 		ts' <- funcSemantic id tf gt lt coms1
 		ts' <- funcSemantic id tf gt lt coms2
+		return ts'
+
+funcSemantic id tf gt lt (While cond coms) = do
+  if ((semFceEvalCond id tf gt lt cond) == PasNone) then
+		error ("Type mismatch in bool expression in function: " ++ id)
+	else do
+		ts' <- funcSemantic id tf gt lt coms
 		return ts'
 
 funcSemantic id tf gt lt (Expr expr) =
@@ -437,4 +451,4 @@ semFceEvalCond id tf gt lt (IsGreatE exp1 exp2) = do
 		error ("Type mismatch in bool expression in function: " ++ id)
 	where
         fstCon = fceEvalSem id tf gt lt exp1
-        sndCon = fceEvalSem id tf gt lt exp2
+        sndCon = fceEvalSem id tf gt lt exp2        
