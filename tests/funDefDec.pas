@@ -4,21 +4,27 @@
 
 var a : integer, hovno : double, prdik : string;
 
-function serepes () : integer;
+function serepes (n : integer) : integer;
 
 function lolcode (n : double) : integer;
 	var hovno : integer;
 	begin
         hovno := 3;
-        lolcode := serepes();
+        lolcode := serepes(hovno);
 	end
 
-function serepes () : integer;
+function serepes (n : integer) : integer;
     begin
-        serepes := 59;
+        serepes := n;
     end
 
 begin
-	a := lolcode(3);
-	writeln(a);
+	if (10<20) then
+        begin
+            prdik := 'serepes';
+        end
+    else
+        prdik := 'neserepes';
+    a := lolcode(3);
+	writeln(prdik);
 end.
