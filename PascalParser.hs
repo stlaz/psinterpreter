@@ -24,7 +24,7 @@ tokDef = emptyDef
 	,	identLetter		= alphaNum <|> char '_'
 	,	opStart 		= opLetter emptyDef
 	,	opLetter		= oneOf "+-=:div<>"
-	,	reservedOpNames	= [ ":=", "+", "*", "div", "=", "<>" ]
+	,	reservedOpNames	= [ ":=", "+", "*", "div", "=", "<>" , "++"]
 	,	reservedNames 	= [	"begin", "do", "double", "else", "end",
 							"if", "integer", "readln", "string", "then", "var",
 							"while", "writeln", "function" ]
@@ -178,7 +178,7 @@ parseAssignment = do
 expr = buildExpressionParser operators term where
 	operators = [
 			[ op "*" Mult, op "div" Div ],
-			[ op "+" Add, op "-" Sub ]
+			[ op "+" Add, op "-" Sub, op "++" Add ]
 		]
 	op name func = 
 		Infix (do { reservedOp name; return func }) AssocLeft
