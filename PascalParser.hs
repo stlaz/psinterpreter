@@ -44,7 +44,12 @@ dot 			= P.dot lexal
 comma 			= P.comma lexal
 colon			= P.colon lexal
 
-stringLiteral =do
+stringLiteral = do
+		try(do{s <- parseString; s2 <- stringLiteral; return $ s++"\'"++s2})
+	<|> do
+		try(do{s<-parseString; return s})
+
+parseString = do
     char '\''
     str <- manyTill escapeOrStringChar $ char '\''
     -- The following is a hack, operator ++ with a preceding whitespace wont work without it
