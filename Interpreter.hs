@@ -100,9 +100,9 @@ evaluate tf ts (Add exp1 exp2) = do
         3 -> (setDbl $ (getDbl firstSym) + (fromIntegral (getInt secondSym)), emptyIOST)
         4 -> (setDbl $ (getDbl firstSym) + (getDbl secondSym), emptyIOST)
         5 -> (setStr $ (getStr firstSym) ++ (getStr secondSym), emptyIOST)
-        6 -> (emptyFunc, evalFuncExpr tf ts 6 Plus first second)
-        7 -> (emptyFunc, evalFuncExpr tf ts 7 Plus first second)
-        8 -> (emptyFunc, evalFuncExpr tf ts 8 Plus first second)
+        6 -> (emptyFunc, evalFuncExpr tf ts 6 Plus first exp2)
+        7 -> (emptyFunc, evalFuncExpr tf ts 7 Plus first exp2)
+        8 -> (emptyFunc, evalFuncExpr tf ts 8 Plus first exp2)
         _ -> (emptySym, emptyIOST)
     where
         first = evaluate tf ts exp1
@@ -117,9 +117,9 @@ evaluate tf ts (Sub exp1 exp2) = do
         2 -> (setDbl $ (fromIntegral (getInt firstSym)) - (getDbl secondSym), emptyIOST)
         3 -> (setDbl $ (getDbl firstSym) - (fromIntegral (getInt secondSym)), emptyIOST)
         4 -> (setDbl $ (getDbl firstSym) - (getDbl secondSym), emptyIOST)
-        6 -> (emptyFunc, evalFuncExpr tf ts 6 Minus first second)
-        7 -> (emptyFunc, evalFuncExpr tf ts 7 Minus first second)
-        8 -> (emptyFunc, evalFuncExpr tf ts 8 Minus first second)
+        6 -> (emptyFunc, evalFuncExpr tf ts 6 Minus first exp2)
+        7 -> (emptyFunc, evalFuncExpr tf ts 7 Minus first exp2)
+        8 -> (emptyFunc, evalFuncExpr tf ts 8 Minus first exp2)
         _ -> (emptySym, emptyIOST)
     where
         first = evaluate tf ts exp1
@@ -134,9 +134,9 @@ evaluate tf ts (Mult exp1 exp2) = do
         2 -> (setDbl $ (fromIntegral (getInt firstSym)) * (getDbl secondSym), emptyIOST)
         3 -> (setDbl $ (getDbl firstSym) * (fromIntegral (getInt secondSym)), emptyIOST)
         4 -> (setDbl $ (getDbl firstSym) * (getDbl secondSym), emptyIOST)
-        6 -> (emptyFunc, evalFuncExpr tf ts 6 Times first second)
-        7 -> (emptyFunc, evalFuncExpr tf ts 7 Times first second)
-        8 -> (emptyFunc, evalFuncExpr tf ts 8 Times first second)
+        6 -> (emptyFunc, evalFuncExpr tf ts 6 Times first exp2)
+        7 -> (emptyFunc, evalFuncExpr tf ts 7 Times first exp2)
+        8 -> (emptyFunc, evalFuncExpr tf ts 8 Times first exp2)
         _ ->(emptySym, emptyIOST)
     where
         first = evaluate tf ts exp1
@@ -148,9 +148,9 @@ evaluate tf ts (Mult exp1 exp2) = do
 evaluate tf ts (Div exp1 exp2) = do
     case trinity of
         1 -> (setInt $ (getInt firstSym) `div` (getInt secondSym), emptyIOST)
-        6 -> (emptyFunc, evalFuncExpr tf ts 6 Divide first second)
-        7 -> (emptyFunc, evalFuncExpr tf ts 7 Divide first second)
-        8 -> (emptyFunc, evalFuncExpr tf ts 8 Divide first second)
+        6 -> (emptyFunc, evalFuncExpr tf ts 6 Divide first exp2)
+        7 -> (emptyFunc, evalFuncExpr tf ts 7 Divide first exp2)
+        8 -> (emptyFunc, evalFuncExpr tf ts 8 Divide first exp2)
         _ -> (emptySym, emptyIOST)
     where
         first = evaluate tf ts exp1
@@ -161,16 +161,20 @@ evaluate tf ts (Div exp1 exp2) = do
 
 evaluate tf ts (Pars exp) = evaluate tf ts exp
 
-evalFuncExpr :: FunctionTable -> SymbolTable -> Int -> Operation  -> (Symbol, IO SymbolTable) -> (Symbol, IO SymbolTable)-> IO SymbolTable
+evalFuncExpr :: FunctionTable -> SymbolTable -> Int -> Operation  -> (Symbol, IO SymbolTable) -> Expr -> IO SymbolTable
 -- I am so so sorry :(
-evalFuncExpr tf ts binType op sym1 sym2 = do
+evalFuncExpr tf ts binType op sym1 expr = do
     firsttab <- firstIO
-    secondtab <- secondIO
+    --secondtab <- secondIO
     let symtail1 = tail firsttab
-    let symtail2 = tail secondtab
+    --let symtail2 = tail secondtab
     let fIO = fiIO firsttab
-    let sIO = seIO secondtab
+    --let sIO = seIO secondtab
     if(binType == 6) then do
+        let evalRes = evalSec symtail1 -- we need to eval the second with new symtable in the case where globvars change
+        secondtab <- secondIO evalRes
+        let symtail2 = tail secondtab
+        let sIO = seIO secondtab
         case binTypes fIO sIO of
             1 -> case op of
                 Plus -> return $ [("",(setInt $ (getInt fIO) + (getInt sIO)))] ++ symtail2
@@ -197,6 +201,8 @@ evalFuncExpr tf ts binType op sym1 sym2 = do
                 _ -> return $ [("",emptySym)] ++ symtail2
             _ -> return $ [("",emptySym)] ++ symtail2   
     else if(binType == 7) then do
+        let evalRes = evalSec symtail1 -- we need to eval the second with new symtable in the case where globvars change
+        let secondSym = fst evalRes
         case binTypes fIO secondSym of
             1 -> case op of
                 Plus -> return $ [("",(setInt $ (getInt fIO) + (getInt secondSym)))] ++ symtail1
@@ -222,8 +228,11 @@ evalFuncExpr tf ts binType op sym1 sym2 = do
                 Plus -> return $ [("",(setStr $ (getStr fIO) ++ (getStr secondSym)))] ++ symtail1
                 _ -> return $ [("",emptySym)] ++ symtail1
             _ -> return $ [("",emptySym)] ++ symtail1   
-        else if(binType == 8) then do
-        --print $ (show firstSym) ++ (show sIO)
+    else if(binType == 8) then do
+        let evalRes = evalSec ts -- now we just need the original symtab
+        secondtab <- secondIO evalRes
+        let symtail2 = tail secondtab
+        let sIO = seIO secondtab
         case binTypes firstSym sIO of
             1 -> case op of
                 Plus -> return $ [("",(setInt $ (getInt firstSym) + (getInt sIO)))] ++ symtail2
@@ -251,10 +260,10 @@ evalFuncExpr tf ts binType op sym1 sym2 = do
             _ -> return $ [("",emptySym)] ++ symtail2   
     else return $ [("",emptySym)] ++ []
     where
+        evalSec ts' = evaluate tf ts' expr
         firstSym = fst sym1
         firstIO = snd sym1
-        secondSym = fst sym2
-        secondIO = snd sym2
+        secondIO res = snd res
         fiIO tab = snd $ head tab
         seIO tab = snd $ head tab
 
@@ -418,8 +427,6 @@ evalBoolFnc btype op ftab stab = do
         fSym = fst ftab
         sSym = fst stab
 
-
-
 interpret :: FunctionTable -> SymbolTable -> Command -> IO SymbolTable
 interpret tf ts Empty = return ts   -- Empty expression, simple
 interpret tf ts (Assign var expr) = do
@@ -470,8 +477,13 @@ interpret tf ts (Seq (com:coms)) = do
     interpret tf ts' (Seq coms)
 interpret tf ts (If cond coms1 coms2) = do
     condTup <- condRes
-    if(fst condTup) then interpret tf ts coms1
-        else interpret tf ts coms2
+    let posSym = snd condTup
+    if(posSym /= emptyST) then
+        -- a function call was in the condition - possible globvars change
+        if(fst condTup) then interpret tf posSym coms1
+            else interpret tf posSym coms2        
+    else if(fst condTup) then interpret tf ts coms1
+            else interpret tf ts coms2
     where
         condRes = evalCond tf ts cond
 interpret tf ts (While cond coms) = do
