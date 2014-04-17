@@ -130,6 +130,9 @@ parseFuncBody = do
 
 -- This function deals with commands in the body of the programme and in functions
 cmd = do
+	lookAhead semi
+	return Empty
+	<|> do
         try parseAssignment
     <|> do
     	reserved "begin"

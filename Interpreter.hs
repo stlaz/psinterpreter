@@ -488,7 +488,11 @@ interpret tf ts (If cond coms1 coms2) = do
         condRes = evalCond tf ts cond
 interpret tf ts (While cond coms) = do
     condTup <- condRes
-    if(fst condTup) then do
+    let posSym = snd condTup
+    if(posSym /= emptyST) then
+        if(fst condTup) then interpret tf posSym coms
+            else return posSym
+    else if(fst condTup) then do
       ts' <- interpret tf ts coms
       interpret tf ts' (While cond coms)
     else return ts
@@ -530,6 +534,6 @@ main = do
                 newsym <- interpret funcTable symTable (trd' absyntree)
                 print newsym
                 --print $ snd' absyntree
-                --print $ trd' absyntree
+                print $ trd' absyntree
 				else
 					error "Function semantic failure."

@@ -8,9 +8,9 @@ int globmagic(void) {
 }
 
 int main(void) {
-    x = 2.0;
-    if(x > globmagic()) {
-        printf("%x > 0 lf\n", x);
+    x = 6.0;
+    if((globmagic()) + x > globmagic()) {
+        printf("x > 0 %lf\n", x);
     }
     else printf("x < 0 %lf\n", x);
     return 0;
