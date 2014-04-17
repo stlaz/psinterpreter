@@ -24,7 +24,7 @@ tokDef = emptyDef
 	,	identLetter		= alphaNum <|> char '_'
 	,	opStart 		= opLetter emptyDef
 	,	opLetter		= oneOf "+-=:div<>"
-	,	reservedOpNames	= [ ":=", "+", "*", "div", "=", "<>" , "++"]
+	,	reservedOpNames	= [ ":=", "+", "*", "div", "=", "<>" , "++", "-"]
 	,	reservedNames 	= [	"begin", "do", "double", "else", "end",
 							"if", "integer", "readln", "string", "then", "var",
 							"while", "writeln", "function" ]
@@ -44,18 +44,31 @@ dot 			= P.dot lexal
 comma 			= P.comma lexal
 colon			= P.colon lexal
 
-stringLiteral = do
-	char '\''
-	s <- manyTill chars (char '\'')
-	return $ SConst s
-	where
-		chars = escaped <|> noneOf "\'"
-		escaped = do char '\\'; choice (zipWith es cd replace)
-		es cd replace = do 
-			char cd; return replace
-		cd        = ['b',  'n',  'f',  'r',  't',  '\\', '\"', '/']
-		replace = ['\b', '\n', '\f', '\r', '\t', '\\', '\"', '/']
+stringLiteral =do
+    char '\''
+    str <- manyTill escapeOrStringChar $ char '\''
+    -- The following is a hack, operator ++ with a preceding whitespace wont work without it
+    try(whiteSpace)		
+    return str
+    <?> "end of string"
 
+escapeOrStringChar :: Parser Char
+escapeOrStringChar = try (string "''" >> return '\'') <|> anyChar
+--stringLiteral = do
+--	string "\'"
+--	str <- manyTill anyChar (try (string "\'"))
+--	return str
+--stringLiteral = do
+--	char '\''
+--	s <- manyTill anyChar (try (char '\''))
+--	return s
+--	--where
+--	--	chars = escaped <|> noneOf "\'"
+--	--	escaped = do char '\\'; choice (zipWith es cd replace)
+--	--	es cd replace = do 
+--	--		char cd; return replace
+--	--	cd        = ['b',  'n',  'f',  'r',  't',  '\\', '\"', '/']
+--	--	replace = ['\b', '\n', '\f', '\r', '\t', '\\', '\"', '/']
 
 -- starting non-terminal, removes all spaces and comments at the start of the file
 pascalp = do
@@ -189,7 +202,7 @@ term =
 	<|> do		
 		try(parseInteger)
 	<|> do
-		stringLiteral
+		try(do {s <- stringLiteral;return (SConst s)});
 	<|> do
 		try parseIdExpr
 	<|> do
