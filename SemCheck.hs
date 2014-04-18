@@ -12,6 +12,7 @@ fceRetType foo = fst foo
 	where
 		fst (x,_,_,_) = x
 
+-- returns the resulting type of a binary operation
 fceBinTypes x y
 	| (x == PasInt) && (y == PasInt) = 1		-- Int Int
 	| (x == PasInt) && (y == PasDbl) = 2		-- Int Dbl
@@ -20,6 +21,7 @@ fceBinTypes x y
 	| (x == PasStr) && (y == PasStr) = 5		-- String String
 	| otherwise = error "Incompatible types in a binary operation!"
 
+-- semantic check for function body
 chkFunctions ts tf (fce:fces) =
 
 	 	-- This if builds a local symbol table from function params, local variables,
@@ -39,6 +41,7 @@ chkFunctions ts tf (fce:fces) =
 
 chkFunctions _ _ [] = PasNone
 
+-- semantic Expr checkers for the main block
 evaluateSem :: FunctionTable -> SymbolTable -> Expr -> PasTypes
 evaluateSem tf ts (IConst c) = PasInt
 evaluateSem tf ts (DConst c) = PasDbl
@@ -105,6 +108,9 @@ evaluateSem tf ts (Div exp1 exp2) = do
 
 evaluateSem tf ts (Pars exp) = evaluateSem tf ts exp
 
+-- semantic Expr checkers for the function block
+-- has to have a global and a local symbol table, also the id of the checked function
+-- so it can check for declaration of function calls inside the function
 fceEvalSem :: String -> FunctionTable -> SymbolTable -> SymbolTable -> Expr -> PasTypes
 fceEvalSem id tf gt lt (IConst c) = PasInt
 fceEvalSem id tf gt lt (DConst c) = PasDbl
@@ -176,13 +182,16 @@ fceEvalSem id tf gt lt (Div exp1 exp2) = do
 
 fceEvalSem id tf gt lt (Pars exp) = fceEvalSem id tf gt lt exp
 
-
+-- functions for type evaluation of a list of argument
+-- function version
 fceEvalSemLst id tf gt lt [] = []
 fceEvalSemLst id tf gt lt (x:xs) = (fceEvalSem id tf gt lt x) : (fceEvalSemLst id tf gt lt xs)
 
+-- main block version
 evalSemLst tf ts [] = []
 evalSemLst tf ts (x:xs) = (evaluateSem tf ts x) : (evalSemLst tf ts xs)
 
+-- checks if the function parameter types match the definition/declaration
 chkFceParams :: [(String, PasTypes)] -> [PasTypes] -> PasTypes
 chkFceParams (x:xs) (y:ys)=
 	if ((snd x) == y) then
@@ -197,14 +206,7 @@ chkFceParams (x:xs) (y:ys)=
 chkFceParams [] [] = PasNone
 chkFceParams _ _ = error "Function argument count mismatch!"
 
---testTypes :: SymbolTable -> String -> Symbol -> IO SymbolTable
---testTypes ts var value = do
---		if ((getType value) == (getType $ get ts var)) then do
---			-- Type matches perfectly
---			return $ set ts var value
---		else
---			error "Assignment type mismatch!"
-
+-- main function of the semantic check in the main block
 semantic :: FunctionTable -> SymbolTable -> Command -> IO SymbolTable
 semantic tf ts Empty = return ts	-- Empty expression, simple
 semantic tf ts (Assign var expr) = do
@@ -259,6 +261,8 @@ semantic tf ts (Expr expr) = do
 	where
 		res = evaluateSem tf ts expr
 
+-- main function of the semantic check in the function body
+-- basically the same as previous checker, has to have local table, global table, function id
 funcSemantic :: String -> FunctionTable -> SymbolTable -> SymbolTable -> Command -> SymbolTable
 funcSemantic id tf gt lt Empty = gt	-- Empty expression, simple
 funcSemantic id tf gt lt (Assign var expr) = do
@@ -319,9 +323,10 @@ funcSemantic id tf gt lt (Expr expr) =
 	where
 		res = fceEvalSem id tf gt lt expr
 
+-- boolean expression type evaluation functions for the main body
 semEvalCond :: FunctionTable -> SymbolTable -> BoolExpr -> PasTypes
 semEvalCond tf ts (Equal exp1 exp2)    = do
-    if((fstCon == sndCon) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
+    if((fstCon == sndCon)) then
 		fstCon
 	else if (((fstCon == PasDbl) || (sndCon == PasDbl)) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
 		PasDbl
@@ -332,7 +337,7 @@ semEvalCond tf ts (Equal exp1 exp2)    = do
         sndCon = evaluateSem tf ts exp2
 
 semEvalCond tf ts (NEqual exp1 exp2)   = do
-    if((fstCon == sndCon) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
+    if((fstCon == sndCon)) then
 		fstCon
 	else if (((fstCon == PasDbl) || (sndCon == PasDbl)) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
 		PasDbl
@@ -343,7 +348,7 @@ semEvalCond tf ts (NEqual exp1 exp2)   = do
         sndCon = evaluateSem tf ts exp2
 
 semEvalCond tf ts (IsLess exp1 exp2)   = do
-    if((fstCon == sndCon) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
+    if((fstCon == sndCon)) then
 		fstCon
 	else if (((fstCon == PasDbl) || (sndCon == PasDbl)) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
 		PasDbl
@@ -354,7 +359,7 @@ semEvalCond tf ts (IsLess exp1 exp2)   = do
         sndCon = evaluateSem tf ts exp2
 
 semEvalCond tf ts (IsGreat exp1 exp2)  = do
-    if((fstCon == sndCon) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
+    if((fstCon == sndCon)) then
 		fstCon
 	else if (((fstCon == PasDbl) || (sndCon == PasDbl)) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
 		PasDbl
@@ -365,7 +370,7 @@ semEvalCond tf ts (IsGreat exp1 exp2)  = do
         sndCon = evaluateSem tf ts exp2
 
 semEvalCond tf ts (IsLessE exp1 exp2)  = do
-    if((fstCon == sndCon) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
+    if((fstCon == sndCon)) then
 		fstCon
 	else if (((fstCon == PasDbl) || (sndCon == PasDbl)) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
 		PasDbl
@@ -376,7 +381,7 @@ semEvalCond tf ts (IsLessE exp1 exp2)  = do
         sndCon = evaluateSem tf ts exp2
 
 semEvalCond tf ts (IsGreatE exp1 exp2) = do
-    if((fstCon == sndCon) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
+    if((fstCon == sndCon)) then
 		fstCon
 	else if (((fstCon == PasDbl) || (sndCon == PasDbl)) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
 		PasDbl
@@ -386,9 +391,10 @@ semEvalCond tf ts (IsGreatE exp1 exp2) = do
         fstCon = evaluateSem tf ts exp1
         sndCon = evaluateSem tf ts exp2
 
+-- boolean expression type evaluation functions for the function body
 semFceEvalCond :: String -> FunctionTable -> SymbolTable -> SymbolTable -> BoolExpr -> PasTypes
 semFceEvalCond id tf gt lt (Equal exp1 exp2)    = do
-    if((fstCon == sndCon) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
+    if((fstCon == sndCon)) then
 		fstCon
 	else if (((fstCon == PasDbl) || (sndCon == PasDbl)) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
 		PasDbl
@@ -399,7 +405,7 @@ semFceEvalCond id tf gt lt (Equal exp1 exp2)    = do
         sndCon = fceEvalSem id tf gt lt exp2
 
 semFceEvalCond id tf gt lt (NEqual exp1 exp2)   = do
-    if((fstCon == sndCon) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
+    if((fstCon == sndCon)) then
 		fstCon
 	else if (((fstCon == PasDbl) || (sndCon == PasDbl)) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
 		PasDbl
@@ -410,7 +416,7 @@ semFceEvalCond id tf gt lt (NEqual exp1 exp2)   = do
         sndCon = fceEvalSem id tf gt lt exp2
 
 semFceEvalCond id tf gt lt (IsLess exp1 exp2)   = do
-    if((fstCon == sndCon) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
+    if((fstCon == sndCon)) then
 		fstCon
 	else if (((fstCon == PasDbl) || (sndCon == PasDbl)) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
 		PasDbl
@@ -421,7 +427,7 @@ semFceEvalCond id tf gt lt (IsLess exp1 exp2)   = do
         sndCon = fceEvalSem id tf gt lt exp2
 
 semFceEvalCond id tf gt lt (IsGreat exp1 exp2)  = do
-    if((fstCon == sndCon) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
+    if((fstCon == sndCon)) then
 		fstCon
 	else if (((fstCon == PasDbl) || (sndCon == PasDbl)) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
 		PasDbl
@@ -432,7 +438,7 @@ semFceEvalCond id tf gt lt (IsGreat exp1 exp2)  = do
         sndCon = fceEvalSem id tf gt lt exp2
 
 semFceEvalCond id tf gt lt (IsLessE exp1 exp2)  = do
-    if((fstCon == sndCon) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
+    if((fstCon == sndCon)) then
 		fstCon
 	else if (((fstCon == PasDbl) || (sndCon == PasDbl)) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
 		PasDbl
@@ -443,7 +449,7 @@ semFceEvalCond id tf gt lt (IsLessE exp1 exp2)  = do
         sndCon = fceEvalSem id tf gt lt exp2
 
 semFceEvalCond id tf gt lt (IsGreatE exp1 exp2) = do
-    if((fstCon == sndCon) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
+    if((fstCon == sndCon)) then
 		fstCon
 	else if (((fstCon == PasDbl) || (sndCon == PasDbl)) && (((fstCon /= PasStr)) || (sndCon /= PasStr))) then
 		PasDbl

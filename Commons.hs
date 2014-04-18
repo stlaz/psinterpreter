@@ -62,6 +62,7 @@ set (s@(v,_):ss) var val =
 	if v == var	then (var, val):ss
 		else s : set ss var val
 
+-- looks up a function declaration in a symbol table and returns it if the name matches
 getFncDec :: SymbolTable -> String -> Symbol
 getFncDec [] _ = emptySym
 getFncDec (s@(var, val):ss) v =
@@ -69,6 +70,7 @@ getFncDec (s@(var, val):ss) v =
 		then val
 		else getFncDec ss v
 
+-- looks up a function definition in a symbol table and returns it if the name matches
 getFncDef :: SymbolTable -> String -> Symbol
 getFncDef [] _ = emptySym
 getFncDef (s@(var, val):ss) v =
@@ -90,6 +92,7 @@ fillFunc [] = []
 fillFunc ((Function name pars t locals coms):tail) =
 	(name, (setFnc name t pars locals coms)):(fillFunc tail)
 
+-- returns the index of an symbol table element in a symbol table
 getIndex _ _ [] = 0
 getIndex count name (table:tables) =
     if (name == (fst table)) then
@@ -97,6 +100,7 @@ getIndex count name (table:tables) =
     else
         getIndex (count + 1) name tables
 
+-- checks declarations for mismatches and mising definitions
 chkFuncDefs tf [] = tf
 chkFuncDefs tf (table:tables) =
     if (getFncDec tf (fst table) == emptySym) then
@@ -112,6 +116,7 @@ chkFuncDefs tf (table:tables) =
         else
             chkFuncDefs tf tables
 
+-- checks the function symbol table for multiple declarations/definitions
 chkFncTables :: SymbolTable -> PasTypes
 chkFncTables [] = PasNone
 chkFncTables (table:tables) = do
@@ -126,6 +131,8 @@ chkFncTables (table:tables) = do
         else
             error "Multiple function definitions of the same name."
 
+-- checks the symbol table for multiple definitions
+-- also checks for matches with the function definitions 
 chkSymTables [] _ = []
 chkSymTables ftl@(lt:lts) tf =
     if ((getType (get (chkSymTables lts tf) (fst lt))) == PasNone) then

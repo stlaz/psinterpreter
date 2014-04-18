@@ -4,7 +4,7 @@
 
 var a : integer, hovno : double, prdik : string;
 
-function serepes (a : string) : string;
+function serepes (a : integer) : string;
 
 function lolcode (n : double) : integer;
 	var hovno : integer, retezhoven : string;
@@ -28,7 +28,7 @@ function serepes (a : integer) : string;
     end
 
 begin
-	if (10<20) then
+	if ('lol' > 'gold') then
         begin
             prdik := serepes(200000);
         end
