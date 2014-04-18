@@ -490,12 +490,13 @@ interpret tf ts (While cond coms) = do
     condTup <- condRes
     let posSym = snd condTup
     if(posSym /= emptyST) then
-        if(fst condTup) then interpret tf posSym coms
+        if(fst condTup) then do
+            interpret tf posSym (While cond coms)
             else return posSym
     else if(fst condTup) then do
       ts' <- interpret tf ts coms
       interpret tf ts' (While cond coms)
-    else return ts
+        else return ts
     where
         condRes = evalCond tf ts cond
 
