@@ -271,7 +271,7 @@ evalCond :: FunctionTable -> SymbolTable -> BoolExpr -> IO (Bool, SymbolTable)
 evalCond tf ts (Equal exp1 exp2)    = do
     if(types) < 5 then do
         return (evalBoolNum (==) types firstSym secondSym, emptyST)
-    else if types == 5 then do return (evalBoolStr (<) firstSym secondSym, emptyST)
+    else if types == 5 then do return (evalBoolStr (==) firstSym secondSym, emptyST)
     else if (types > 5 && types < 9) then evalBoolFnc types Equals first second
     else error "Incompatible types in boolean comparison"
     where 
@@ -284,7 +284,7 @@ evalCond tf ts (Equal exp1 exp2)    = do
 evalCond tf ts (NEqual exp1 exp2)   = do
     if(types) < 5 then do
         return (evalBoolNum (/=) types firstSym secondSym, emptyST)
-    else if types == 5 then do return (evalBoolStr (<) firstSym secondSym, emptyST)
+    else if types == 5 then do return (evalBoolStr (/=) firstSym secondSym, emptyST)
     else if (types > 5 && types < 9) then evalBoolFnc types NEquals first second
     else error "Incompatible types in boolean comparison"
     where 
