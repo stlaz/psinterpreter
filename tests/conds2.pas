@@ -3,6 +3,13 @@ var n : integer, s : string;
 function bar() : double;
 function fun(n : string) : double;
 
+function boo() : string;
+var n : string;
+begin
+    readln(n);
+    boo := n;
+end
+
 function fun(n : string) : double;
 begin
     if (n = 'lolcode') then
@@ -65,6 +72,12 @@ begin
                     writeln(s + ' equals lolcode')
                 end
         end;
-
+    writeln('');
+    writeln('Readln inside a while condition (inside a function call):');
+    writeln('The while cycle will go on until it recieves the ''string'' string');
+    while(boo() <> 'string') do
+        begin
+            writeln('wtf');
+        end;
     writeln('Shutting Down...');
 end.
