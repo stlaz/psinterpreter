@@ -77,7 +77,7 @@ begin
     writeln('The while cycle will go on until it recieves the ''string'' string');
     while(boo() <> 'string') do
         begin
-            writeln('wtf');
+            writeln('Im a pretty cycle, dont mind me...');
         end;
     writeln('Shutting Down...');
 end.
