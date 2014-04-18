@@ -1,3 +1,13 @@
+{-
+  	@file: Interpreter.hs
+	@authors: 
+        Stanislav Laznicka  <xlazni08@stud.fit.vutbr.cz>
+        Petr Kubat          <xkubat11@stud.fit.vutbr.cz>
+	
+	@brief: This file describes some common structures and functions for
+			the whole interpreter
+-}
+
 module Commons (PasTypes(..), Command(..), Expr(..), Functions(Function),
 			BoolExpr(..), SymbolTable, FunctionTable, Symbol, fillSymbols,
 			fillFunc, emptyIOSym, emptyIOST, emptyST, emptySym, emptyFunc,
@@ -7,10 +17,12 @@ module Commons (PasTypes(..), Command(..), Expr(..), Functions(Function),
 			chkFuncDefs, chkFncTables, getIndex, getFncDef, getFncRet)
 			where
 
+-- Data types of the given language
 data PasTypes = PasNone | PasInt | PasDbl | PasStr | PasFunc
 	deriving (Show, Eq, Ord)
 
-data Command = Empty 	-- this should describe the program structure
+-- Possible commands of the language
+data Command = Empty
 	| Assign String Expr
 	| Writeln Expr
 	| Readln String
@@ -24,6 +36,7 @@ data Command = Empty 	-- this should describe the program structure
 data Functions = Function String [ (String, PasTypes) ] PasTypes [ (String, PasTypes) ] Command
 	deriving Show
 
+-- Possible expressions of the language
 data Expr = IConst Int
 	| SConst String
 	| DConst Double
@@ -42,7 +55,6 @@ data BoolExpr = Equal Expr Expr
 	| IsLess Expr Expr
 	| IsGreatE Expr Expr
 	| IsLessE Expr Expr
-	| BPars BoolExpr
 	deriving (Show, Eq)
 
 type SymbolTable = [(String, Symbol)]
@@ -78,6 +90,8 @@ getFncDef (s@(var, val):ss) v =
 		then val
 		else getFncDef ss v
 
+-- Fills a symbol table from the structure returned by parser
+-- Adds a null variable for interpreter purposes
 fillSymbols [] = [("000", emptySym)]
 fillSymbols (vh:tail) =
 	if snd vh == PasInt then
@@ -88,6 +102,7 @@ fillSymbols (vh:tail) =
 		(fst vh, (setStr "")):(fillSymbols tail)
 	else error "Unknown variable type.\n"
 
+-- Fills a symbol table for functions
 fillFunc [] = []
 fillFunc ((Function name pars t locals coms):tail) =
 	(name, (setFnc name t pars locals coms)):(fillFunc tail)
@@ -143,6 +158,8 @@ chkSymTables ftl@(lt:lts) tf =
     else
         error ("Multiple definition of the same variable: " ++ (fst lt))
 
+
+-- Some useful functions follow, mostly to set/create a symbol
 emptyIOSym :: IO Symbol
 emptyIOSym = do
 	return emptySym
@@ -194,6 +211,7 @@ setDbl num = (PasDbl, 0, num, "", emptyFuncDef)
 setStr str = (PasStr, 0, 0.0, str, emptyFuncDef)
 setFnc name t pars locals coms = (PasFunc, 0, 0.0, name, (t, pars, locals, coms))
 
+-- This function returns a number that depends on the type of two symbols given to it
 binTypes x y
 	| (firstType == PasInt) && (secondType == PasInt) = 1		-- Int Int
 	| (firstType == PasInt) && (secondType == PasDbl) = 2		-- Int Dbl
