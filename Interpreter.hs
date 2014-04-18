@@ -491,7 +491,8 @@ interpret tf ts (While cond coms) = do
     let posSym = snd condTup
     if(posSym /= emptyST) then
         if(fst condTup) then do
-            interpret tf posSym (While cond coms)
+            ts' <- interpret tf posSym coms
+            interpret tf ts' (While cond coms) 
             else return posSym
     else if(fst condTup) then do
         ts' <- interpret tf ts coms
