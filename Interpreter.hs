@@ -1,3 +1,12 @@
+{-
+  @file: Interpreter.hs
+  @authors: 
+        Stanislav Laznicka  <xlazni08@stud.fit.vutbr.cz>
+        Petr Kubat          <xkubat11@stud.fit.vutbr.cz>
+        Michal Rysavy       <xrysav17@stud.fit.vutbr.cz>
+        Jozef Senko         <xsenko01@stud.fit.vutbr.cz>
+-}
+
 module Main ( main ) where
 
 import System.Environment( getArgs )
@@ -6,33 +15,24 @@ import Commons
 import PascalParser
 import SemCheck
 
+-- Operations data type is important for switches you will see later
 data Operation = Plus | Minus | Times | Divide | Equals |
                  NEquals | IsLower | IsLowerE | IsGreater | IsGreaterE
 
-{-
-set (s@(v,u):ss) var val =
-    if v == var then
-        if stype = stypeNew then
-    else s : set ss var val
-    where
-        stype = getType u
-        stypeNew = getType val
--}
-
---getF :: FunctionTable -> String ->     ([ (String, PasTypes) ], PasTypes, [ (String, PasTypes) ], Command)
---getF [] _ = error "Not found"
---getF (s@(var, val):ss) v =
---  if v == var
---      then val
---      else getF ss v
-
+-- This is the function to interpret a function in an interpreted program
 interFnc :: FunctionTable -> SymbolTable -> String -> [ Expr ] -> IO SymbolTable
 interFnc tf ts name args = do
+    -- Create symbol table for parameters 
     parsTable <- assignFncPars (getFncParams getFncByName) evalPars
+    -- And join it with local variables table and global variables table (parameters
+    -- and local variables go first)
     let ts' = (name, emptySym):(makeWorkST ts parsTable $ getFncLocvars getFncByName)
     symtab <- interpret tf ts' $ getFncCom $ getFncDef tf name
-    --print $ "This is my cool symtab in function " ++ name ++ "\n" ++ (show symtab) ++ "\n"
-    return $ [(name, get symtab name)] ++ (removeMyJunk ((name, emptySym):(addToST (makeSymTab $ getFncLocvars getFncByName) parsTable)) symtab)
+    -- Return a symbol table with changed global variables, without the function's
+    -- parameters and local variables
+    -- NOTE! Result of interpreting a function goes on the top of the returned symtab!
+    return $ [(name, get symtab name)] ++ (removeMyJunk ((name, emptySym):
+        (addToST (makeSymTab $ getFncLocvars getFncByName) parsTable)) symtab)
     where
         evalPars = evalList tf ts args
         addToST [] st = st
@@ -54,6 +54,7 @@ interFnc tf ts name args = do
         removeMyJunk [] ys = ys
         removeMyJunk (x:xs) (y:ys) = removeMyJunk xs ys
 
+-- This function assigns values from a function call to its parameters
 assignFncPars :: [(String, PasTypes)] -> [(Symbol,IO SymbolTable)] -> IO SymbolTable
 assignFncPars [] [] =
     return []
@@ -64,7 +65,10 @@ assignFncPars [] _ =
 assignFncPars f@(var:vars) s@(arg:args) = do
     newSym <- (assignFncPars vars args)
     if(sType == PasFunc) then do
+        -- There was a function call in function arguments (e.g. foo(bar()))
         symTab <- snd arg
+        -- Now check whether the types in argument and the awaited match or if
+        -- retype is needed
         if(fType == (sFuncType symTab)) then do
             return $ (fName, snd $ head symTab):newSym
         else if(fType == PasDbl && ((sFuncType symTab) == PasInt)) then do
@@ -82,10 +86,11 @@ assignFncPars f@(var:vars) s@(arg:args) = do
         sVal = fst arg
         sFuncType symtab = getType $ snd $ head symtab
 
-
+-- Evaluate list of expressions (usefull in function calls - evaluate arguments)
 evalList tf ts [] = []
 evalList tf ts (expr:tail) = (evaluate tf ts expr):(evalList tf ts tail)
 
+-- This function evaluates expressions
 evaluate :: FunctionTable -> SymbolTable -> Expr -> (Symbol, IO SymbolTable)
 evaluate tf ts (IConst c) = (setInt c,emptyIOST)
 evaluate tf ts (DConst c) = (setDbl c,emptyIOST)
@@ -161,17 +166,19 @@ evaluate tf ts (Div exp1 exp2) = do
 
 evaluate tf ts (Pars exp) = evaluate tf ts exp
 
+-- This function evaluates expressions when a function is called inside those
+-- Brace yourselves tho! A big switch is coming :(
 evalFuncExpr :: FunctionTable -> SymbolTable -> Int -> Operation  -> (Symbol, IO SymbolTable) -> Expr -> IO SymbolTable
--- I am so so sorry :(
 evalFuncExpr tf ts binType op sym1 expr = do
-    firsttab <- firstIO
-    --secondtab <- secondIO
-    let symtail1 = tail firsttab
-    --let symtail2 = tail secondtab
-    let fIO = fiIO firsttab
-    --let sIO = seIO secondtab
+    firsttab <- firstIO     -- Get a table of symbols of first argument
+    -- This is the real symtab after function call
+    -- The result of function call was on the head of the symtab, remember?
+    let symtail1 = tail firsttab    
+    let fIO = fiIO firsttab     -- Get the result of the function call
     if(binType == 6) then do
-        let evalRes = evalSec symtail1 -- we need to eval the second with new symtable in the case where globvars change
+        -- Both sides of an expression result in functions
+        -- We need to eval the second expression with new symtable in the case where globvars change
+        let evalRes = evalSec symtail1 
         secondtab <- secondIO evalRes
         let symtail2 = tail secondtab
         let sIO = seIO secondtab
@@ -201,7 +208,9 @@ evalFuncExpr tf ts binType op sym1 expr = do
                 _ -> return $ [("",emptySym)] ++ symtail2
             _ -> return $ [("",emptySym)] ++ symtail2   
     else if(binType == 7) then do
-        let evalRes = evalSec symtail1 -- we need to eval the second with new symtable in the case where globvars change
+        -- First part of the expression was a function
+        -- We need to eval the second with new symtable in the case where globvars change
+        let evalRes = evalSec symtail1
         let secondSym = fst evalRes
         case binTypes fIO secondSym of
             1 -> case op of
@@ -229,7 +238,9 @@ evalFuncExpr tf ts binType op sym1 expr = do
                 _ -> return $ [("",emptySym)] ++ symtail1
             _ -> return $ [("",emptySym)] ++ symtail1   
     else if(binType == 8) then do
-        let evalRes = evalSec ts -- now we just need the original symtab
+        -- Second part of the expression was a function
+        -- Now we just need the original symtab of the second expression
+        let evalRes = evalSec ts 
         secondtab <- secondIO evalRes
         let symtail2 = tail secondtab
         let sIO = seIO secondtab
@@ -267,6 +278,7 @@ evalFuncExpr tf ts binType op sym1 expr = do
         fiIO tab = snd $ head tab
         seIO tab = snd $ head tab
 
+-- This function evaluates conditions
 evalCond :: FunctionTable -> SymbolTable -> BoolExpr -> IO (Bool, SymbolTable)
 evalCond tf ts (Equal exp1 exp2)    = do
     if(types) < 5 then do
@@ -358,8 +370,11 @@ evalBoolNum f types s1 s2 = do
 evalBoolStr :: (String -> String -> Bool) -> Symbol -> Symbol -> Bool
 evalBoolStr f s1 s2 = f (getStr s1) (getStr s2)
 
+-- Whoops, a function on either side of a boolean expression appeared!
 evalBoolFnc :: Int -> Operation -> (Symbol, IO SymbolTable) -> (Symbol, IO SymbolTable) -> IO (Bool, SymbolTable)
--- I am a terrible person.
+-- I am a terrible person. You'll see.
+-- Trying to decide which symbol table to use after the expression is a bit tricky, though.
+-- Therefore we just use the last function call symtable :( 
 evalBoolFnc btype op ftab stab = do
     fstTab <- snd ftab
     secTab <- snd stab
@@ -427,6 +442,7 @@ evalBoolFnc btype op ftab stab = do
         fSym = fst ftab
         sSym = fst stab
 
+-- Here is the mighty interpreting function itself!
 interpret :: FunctionTable -> SymbolTable -> Command -> IO SymbolTable
 interpret tf ts Empty = return ts   -- Empty expression, simple
 interpret tf ts (Assign var expr) = do
@@ -440,13 +456,13 @@ interpret tf ts (Assign var expr) = do
         res = evaluate tf ts expr
 
 interpret tf ts (Writeln expr) = do
-    posSym <- snd midres    -- this is probably the last spot to turn IO Symbol to Symbol here
+    posSym <- snd midres    -- get a possible new symtab
     if((getType $ midresVal) == PasFunc) then do
-        putStrLn $ id result $ snd $ head posSym  -- therefore we need to pass it on, in case Expr is of type PasFunc
-        let ts' = tail posSym
+        putStrLn $ id result $ snd $ head posSym 
+        let ts' = tail posSym   -- the expression in writeln resulted in function -> update symtab
         return ts'
     else do
-        putStrLn $ id result $ fst midres  -- therefore we need to pass it on, in case Expr is of type PasFunc
+        putStrLn $ id result $ fst midres
         return ts
     where 
         midres = evaluate tf ts expr
@@ -463,7 +479,7 @@ interpret tf ts (Readln id) = do
     return $ set ts id $ symval val
     where
         symval val = do
-            case oldtype of
+            case oldtype of  -- If the user input is a wrong type, just fail with read error
                 PasInt -> setInt (read val :: Int)
                 PasDbl -> setDbl (read val :: Double)
                 PasStr -> setStr val
@@ -490,6 +506,7 @@ interpret tf ts (While cond coms) = do
     condTup <- condRes
     let posSym = snd condTup
     if(posSym /= emptyST) then
+        -- a function call in the condition - globvars might have changed
         if(fst condTup) then do
             ts' <- interpret tf posSym coms
             interpret tf ts' (While cond coms) 
@@ -522,7 +539,6 @@ main = do
             let absyntree = parsePascal input fileName
             let symTable = fillSymbols (fst' absyntree)
             let funcTable = fillFunc $ snd' absyntree
-            --print funcTable
             if ( (getType (get (chkSymTables symTable funcTable) "000" )) /= PasNone) then
                 error "Error when checking global table."
             else if (chkFncTables funcTable /= PasNone) then
@@ -530,12 +546,8 @@ main = do
             else if ((getType (get (chkFuncDefs funcTable funcTable) "000")) /= PasNone) then
                 error "Error when checking function defs and decs."
             else if ((chkFunctions symTable funcTable funcTable) == PasNone) then do
-                --print symTable
-                --print $ trd' absyntree
                 semantic funcTable symTable (trd' absyntree)
                 newsym <- interpret funcTable symTable (trd' absyntree)
-                print newsym
-                --print $ snd' absyntree
-                print $ trd' absyntree
+                return newsym
 				else
 					error "Function semantic failure."

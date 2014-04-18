@@ -1,12 +1,13 @@
 {-
-@file: 		parser.hs
-@author: 	Stanislav Laznicka <xlazni08@stud.fit.vutbr.cz>
+	@file: 		parser.hs
+	@authors: 	
+        Stanislav Laznicka  <xlazni08@stud.fit.vutbr.cz>
+        Petr Kubat          <xkubat11@stud.fit.vutbr.cz>
 -}
 
 module PascalParser ( Functions(..), Expr(..),
 					 BoolExpr(..), parsePascal, fst',snd',trd',
 					 PasTypes(..) )  where
--- module Main ( main ) where
 
 import System.IO
 import Text.ParserCombinators.Parsec
@@ -16,6 +17,7 @@ import Text.ParserCombinators.Parsec.Language
 
 import Commons
 
+-- Basic tokens of the language
 tokDef = emptyDef
 	{
 		commentStart 	= "{"
@@ -44,6 +46,7 @@ dot 			= P.dot lexal
 comma 			= P.comma lexal
 colon			= P.colon lexal
 
+-- String literal, recursion goes deper on ''
 stringLiteral = do
 		try(do{s <- parseString; s2 <- stringLiteral; return $ s++"\'"++s2})
 	<|> do
@@ -57,13 +60,15 @@ parseString = do
     return str
     <?> "end of string"
 
--- starting non-terminal, removes all spaces and comments at the start of the file
+-- Starting non-terminal, removes all spaces and comments at the start of the file
+-- Returns a triple - first is a list of globvars, second is functions, third is the
+-- abstract syntax tree
 pascalp = do
 	whiteSpace
 	vars <- option [] variables
 	functionDeclares <- many parseFuncBody
 	reserved "begin"
-	absyntree <- (cmd `sepEndBy` semi)	-- cmd is the actual parsing function
+	absyntree <- (cmd `sepEndBy` semi)
 	reserved "end"
 	dot
 	eof						-- EOF should occur after parsing the whole file
@@ -75,12 +80,11 @@ fst' (x, _, _) = x
 snd' (_, x, _) = x
 trd' (_, _, x) = x
 
-variables = do 		-- dodelat pro double
+variables = do
 	reserved "var"
 	v <- parseVariable `sepBy1` comma  -- possible project assignment mistake here!!!
 	semi
 	return v
-	--option comma
 
 parseVariable = do
 	v <- identifier
@@ -102,7 +106,7 @@ parseVariable = do
 				else do
 					return PasStr
 
-
+-- Function parser, returns Empty command if declaration, anything else if definition
 parseFuncBody = do
 	reserved "function"
 	id <- identifier
@@ -174,7 +178,7 @@ parseAssignment = do
         return (Assign v e)
 
 
-
+-- Expressions parser
 expr = buildExpressionParser operators term where
 	operators = [
 			[ op "*" Mult, op "div" Div ],
@@ -183,6 +187,7 @@ expr = buildExpressionParser operators term where
 	op name func = 
 		Infix (do { reservedOp name; return func }) AssocLeft
 
+-- Expression terms
 term = 
 	do
 		try(parseDouble)
