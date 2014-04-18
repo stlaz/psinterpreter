@@ -246,5 +246,5 @@ boolExpr =
 
 parsePascal input file =
 	case parse pascalp file input of
-		Left e -> error "Parser error."
+		Left e -> error $ "Parser error:\n" ++ show e
 		Right absyntree -> absyntree
