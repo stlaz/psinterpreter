@@ -1,4 +1,4 @@
-var n : integer; s : string;
+var n : integer, s : string;
 
 function bar() : double;
 function fun(n : string) : double;
@@ -52,17 +52,17 @@ begin
     readln(s);
     if (s < 'lolcode') then
         begin
-            writeln('String is lower than ''lolcode''')
+            writeln(s + ' is lower than ''lolcode''')
         end;
     else
         begin
             if (s > 'lolcode') then
                 begin
-                    writeln('String is greater than ''lolcode''')
+                    writeln(s +' is greater than ''lolcode''')
                 end;
             else
                 begin
-                    writeln('String equals lolcode')
+                    writeln(s + ' equals lolcode')
                 end
         end;
 
