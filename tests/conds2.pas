@@ -5,7 +5,7 @@ function fun(n : string) : double;
 
 function fun(n : string) : double;
 begin
-    if (n == 'lolcode') then
+    if (n = 'lolcode') then
         begin
             writeln('Function fun with ''lolcode''');
             writeln('Returning 0.2');
@@ -36,8 +36,8 @@ end
 function bar() : double;
 begin
     writeln('Function bar');
-    writeln('Returning 0.2');
-    bar := 0.2
+    writeln('Calling fun with the argument ''none''');
+    bar := fun('none')
 end
 
 begin
