@@ -1,8 +1,9 @@
--- TODO:
----- kontrola detailu deklarace vs. definice
-
--- TODO pokud nebude nic lepsiho na praci:
----- Prepsat prasacky if
+{-
+  @file: Interpreter.hs
+  @authors:
+        Stanislav Laznicka  <xlazni08@stud.fit.vutbr.cz>
+        Petr Kubat          <xkubat11@stud.fit.vutbr.cz>
+-}
 
 module SemCheck ( semantic, evaluateSem, chkFunctions ) where
 
