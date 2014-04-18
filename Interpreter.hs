@@ -494,8 +494,8 @@ interpret tf ts (While cond coms) = do
             interpret tf posSym (While cond coms)
             else return posSym
     else if(fst condTup) then do
-      ts' <- interpret tf ts coms
-      interpret tf ts' (While cond coms)
+        ts' <- interpret tf ts coms
+        interpret tf ts' (While cond coms)
         else return ts
     where
         condRes = evalCond tf ts cond
