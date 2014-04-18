@@ -1,4 +1,4 @@
-var n : integer;
+var n : integer; s : string;
 
 function bar() : double;
 function fun(n : string) : double;
@@ -43,5 +43,28 @@ end
 begin
     writeln('Enter an integer:');
     readln(n);
-    writeln(foo(n))
+    writeln(foo(n));
+    writeln('Testing string concat');
+    writeln('String1' + 'String2');
+    writeln('');
+    writeln('Testing string comparison with ''lolcode''');
+    writeln('Enter a string:');
+    readln(s);
+    if (s < 'lolcode') then
+        begin
+            writeln('String is lower than ''lolcode''')
+        end;
+    else
+        begin
+            if (s > 'lolcode') then
+                begin
+                    writeln('String is greater than ''lolcode''')
+                end;
+            else
+                begin
+                    writeln('String equals lolcode')
+                end
+        end;
+
+    writeln('Shutting Down...');
 end.
