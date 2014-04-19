@@ -5,19 +5,19 @@ var
     z : double,
     st : string; 
 
-function prdel(prd : integer) : integer;
+function zadecek(prd : integer) : string;
 {begin
     writeln("nooo");
 end}
 
-function prdel(prd : integer) : string;
+function zadecek(prd : integer) : string;
 var
     prdik : integer;
 begin
     {writeln(prd);}
     if(prd > 100) then
-        prdel := 'hovno';
-    else prdel := 'hodne smradu';
+        zadecek := 'bobek';
+    else zadecek := 'hodne smradu';
 end
 
 
@@ -25,13 +25,14 @@ begin
     x := 5;
     y := (4+7)*9 - 2 + 3;
     mdi := 20 div 7;
-    if (x + 2) >= 7 then writeln('prd\nel');
+    if (x + 2) >= 7 then writeln('zadecek');
     else x :=5;
+    writeln('Enter a string');
     readln(st);
     writeln(st);
     writeln(y);
     x;
     writeln(mdi);
-    st := prdel(101);
+    st := zadecek(101);
     writeln(st);
 end.

@@ -3,7 +3,7 @@
 var a : integer, vysl : integer; 
 
 function lolcode (n : integer) : integer;
-    var hovno : integer; 
+    var srapnel : integer; 
 begin
     lolcode := 67;
 end 

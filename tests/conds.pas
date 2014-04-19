@@ -1,12 +1,12 @@
 var x : integer, y : double, z : string;
 
-function prdel() : double;
+function cernaDira() : double;
 begin
-   prdel := 5.6 
+   cernaDira := 5.6 
 end
 
 begin
-    if(y < prdel()) then 
+    if(y < cernaDira()) then 
         if(y > -1) then writeln('I love you');
         else  
     else writeln('Oh my god, they killed Kenny');

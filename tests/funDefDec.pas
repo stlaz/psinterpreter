@@ -2,35 +2,35 @@
 
 
 
-var a : integer, hovno : double, prdik : string;
+var a : integer, srapnel : double, prdik : string;
 
-function serepes (a : integer) : string;
+function psicek (a : integer) : string;
 
 function lolcode (n : double) : integer;
-	var hovno : integer, retezhoven : string;
+	var srapnel : integer, retezsrapnelu : string;
 	begin
-        hovno := 3;
-        retezhoven := serepes(hovno);
-        writeln(retezhoven);
-        lolcode := hovno;
+        srapnel := 3;
+        retezsrapnelu := psicek(srapnel);
+        writeln(retezsrapnelu);
+        lolcode := srapnel;
 	end
 
-function serepes (a : integer) : string;
+function psicek (a : integer) : string;
     begin
         if (a > 10) then begin
             writeln('n je vetsi nez 10');
-            serepes := 'serepes';
+            psicek := 'psicek';
             end
         else begin
             writeln('n je mensi nez 10');
-            serepes := 'neserepes';
+            psicek := 'nepsicek';
         end
     end
 
 begin
 	if ('lol' > 'gold') then
         begin
-            prdik := serepes(200000);
+            prdik := psicek(200000);
         end
     else
         prdik := 'neserepes';
