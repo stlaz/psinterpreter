@@ -4,8 +4,8 @@
 
 CL = ghc
 
-interpreter: Commons.hs Interpreter.hs PascalParser.hs SemCheck.hs
-	$(CL) -o $@ Interpreter
+xsenko01: Main.hs Commons.hs Interpreter.hs PascalParser.hs SemCheck.hs
+	$(CL) -o $@ Main.hs
 
 clean:
-	rm -rf *.hi *.o interpreter
+	rm -rf *.hi *.o xsenko01 

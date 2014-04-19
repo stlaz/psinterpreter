@@ -23,8 +23,8 @@ end
 
 begin 
     x := 5;
-    y := (4+7)*9 - 2 + 3;
-    mdi := 20 div 7;
+    y := (-4+(-7))*9 - 2 + 3;
+    mdi := y div 7;
     if (x + 2) >= 7 then writeln('zadecek');
     else x :=5;
     writeln('Enter a string');
