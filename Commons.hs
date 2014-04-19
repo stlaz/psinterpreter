@@ -1,4 +1,6 @@
 {-
+    Project: FLP-2014-Pascal
+    
   	@file: Interpreter.hs
 	@authors: 
         Stanislav Laznicka  <xlazni08@stud.fit.vutbr.cz>

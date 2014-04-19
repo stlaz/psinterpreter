@@ -1,6 +1,8 @@
 {-
-  @file: Interpreter.hs
-  @authors: 
+    Project: FLP-2014-Pascal
+
+    @file: Interpreter.hs
+    @authors: 
         Stanislav Laznicka  <xlazni08@stud.fit.vutbr.cz>
         Petr Kubat          <xkubat11@stud.fit.vutbr.cz>
         Michal Rysavy       <xrysav17@stud.fit.vutbr.cz>
